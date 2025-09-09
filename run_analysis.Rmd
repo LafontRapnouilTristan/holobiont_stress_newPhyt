@@ -1,0 +1,728 @@
+# I Loading
+
+## Packages
+
+```{r Packages ,echo=FALSE, message=FALSE, warning = F}
+# BiocManager::install("msa") 
+easypackages::libraries(c("dplyr","readr","FactoMineR","RColorBrewer","magrittr","ggplot2",           "forcats","TITAN2","phyloseq","phylosmith","DESeq2","microeco","microViz","speedyseq",           "stringr","factoextra","ggpubr","picante","msa","phangorn","reshape2","data.table",           "patchwork","scales","tidyr","ggConvexHull","ggvegan","mixOmics","purrr","hillR","ggcorrplot",
+                          "flextable","igraph","tibble","ggnetwork"))
+```
+
+```{r Packages ,echo=FALSE, message=FALSE}
+# if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager") 
+# BiocManager::install(c("microbiome", "ComplexHeatmap","mixOmics"), update = FALSE) 
+# devtools::install_github("david-barnett/microViz") 
+# devtools::install_github("mikemc/speedyseq") 
+# devtools::install_github("gavinsimpson/ggvegan")
+# devtools::install_github("cmartin/ggConvexHull")
+# devtools::install_github("davidsjoberg/ggsankey")
+# remotes::install_github("metabaRfactory/metabaR")
+library(speedyseq);library(microbiome); library(microViz); library(metabaR); library(ggsankey); library(ggvegan); library(ggConvexHull); library(mixOmics)
+```
+
+## functions
+
+```{r}
+agg.table.taxo <- function(tab, tax.lvl="genus", tax.table) {
+  tax.table <- tax.table[match(rownames(tab),
+                               rownames(tax.table)),]
+  message(paste('Table aggregation to the', tax.lvl, "level."))
+  #message('Please be sure that the ASV/OTU table and the taxonomy table are ordered the same way')
+  if(nrow(tab) != nrow(tax.table)) stop("The ASV/OTU table and the taxonomy table do not have the same number of rows")
+  tax <- tax.table[,grep(tax.lvl, colnames(tax.table), ignore.case = T)]
+  tax[is.na(tax)] <- "Unknown"
+  tab <- aggregate(tab, by=list("taxo"=tax), FUN=sum)
+  rownames(tab) <- tab[,1]  
+  tab <- tab[,-1]
+  return(tab)
+}
+
+
+arrowMul <- function(arrows, data, at = c(0, 0), fill = 0.75) {
+  u <- c(range(data[,1], range(data[,2])))
+  u <- u - rep(at, each = 2)
+  r <- c(range(arrows[, 1], na.rm = TRUE), range(arrows[, 2], na.rm = TRUE))
+  rev <- sign(diff(u))[-2]
+  if (rev[1] < 0)
+    u[1:2] <- u[2:1]
+  if (rev[2] < 0)
+    u[3:4] <- u[4:3]
+  u <- u/r
+  u <- u[is.finite(u) & u > 0]
+  fill * min(u)
+}
+
+cld_bxplot_wilcox <-
+  function(data, x, y, significance = 0.05, plot, nudge = 0.05){
+    if (kruskal.test(y,x)$p.value<0.05){
+      box_rslt <- with(data,graphics::boxplot(y~x ,plot = F))
+      
+      loc_vec <- box_rslt$stats[nrow(box_rslt$stats),]
+      
+      wilcx_rslt <- with(data,pairwise.wilcox.test(x = y, g = x,p.adjust.method = 'holm'))
+      temp <- wilcx_rslt$p.value
+      
+      # Make a square matrix to populate with the alpha values.
+      n <- nrow(temp)
+      mat.names <- c(colnames(temp), rownames(temp)[n])
+      my.mat <- matrix(data = NA, nrow = n+1, ncol = n+1)
+      colnames(my.mat) <- mat.names
+      rownames(my.mat) <- mat.names
+      
+      # Add diagonal.
+      for (i in 1:nrow(my.mat)) {
+        my.mat[ i, i] <- 0
+      }
+      
+      # Get vector of p.values
+      stat <- na.exclude(as.vector(wilcx_rslt$p.value))
+      
+      # Add other cells to square matrix.
+      k=1
+      for (j in 1:(nrow(my.mat)-1)) {
+        for (i in ((j+1):nrow(my.mat))) {
+          my.mat[i,j] <-  my.mat[j,i] <- stat[k]
+          k=k+1
+        }
+      }
+      cld_vec <- multcompView::multcompLetters(my.mat, threshold=significance)
+      
+      #df with the letters
+      x_df <- c(1:length(cld_vec$Letters))
+      y_df <- box_rslt$stats[nrow(box_rslt$stats),]
+      cbd <- cld_vec$Letters
+      ltr_df <- data.frame(x_df, y_df, cbd)
+      
+      #get coord of the graph
+      plt1 <- ggplot2::ggplot_build(plot)
+      xmin = plt1 $layout$panel_params[[1]]$x.range[1]
+      xmax = plt1 $layout$panel_params[[1]]$x.range[2]
+      ymin = plt1 $layout$panel_params[[1]]$y.range[1]
+      ymax = plt1 $layout$panel_params[[1]]$y.range[2]
+      lmts <- list(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax)
+      y.range <- lmts$ymax - lmts$ymin
+      y.nudge <- nudge * y.range
+      
+      cld <- list(ltr_df = ltr_df, y.nudge = y.nudge)
+      
+      return(plot +
+               annotate(geom="text", x=cld$ltr_df$x_df, y=cld$ltr_df$y_df+cld$y.nudge, label=cld$ltr_df$cbd))
+    }
+    else {return(plot)}
+  }
+```
+
+## Set seed
+
+Not sure its working with rmd
+
+```{r}
+# set.seed(973)
+```
+
+## data
+
+### Soil Chi
+
+```{r}
+soil_chi <- read.csv2("./data/chemistry/Chimie_sols.csv")
+colnames(soil_chi) <- c("ID","Mass","N_pct","C_pct","N_mg","C_mg","ConN","P_mgkg","pH_h2o")
+soil_chi$trmt <- c(rep("P",3),rep("I",3),rep("R",3))
+soil_chi%<>% mutate(across(2:9, as.numeric))
+soil_chi %<>% mutate(trmt = fct_relevel(trmt,"P","I","R"))
+```
+
+### Microbiota
+
+Read clean microbiota data.
+
+```{r}
+load("./articlez/gen1/data/cleaned_microtable_ff.RData") # load final
+```
+
+```{r}
+names(to_save) <- c("meco_mo16s_samsg",
+                    "meco_mo16s_seqsg",
+                    "meco_moits_samsg",
+                    "meco_moits_seqsg",
+                    "meco_mo16s_samsg_wrmed",
+                    "meco_mo16s_seqsg_wrmed",
+                    "meco_moits_samsg_wrmed",
+                    "meco_moits_seqsg_wrmed",
+                    "meco_mo16s_samsg_raref",
+                    "meco_mo16s_seqsg_raref",
+                    "meco_moits_samsg_raref",
+                    "meco_moits_seqsg_raref",
+                    "meco_mo16s_samsg_wrmed_raref",
+                    "meco_mo16s_seqsg_wrmed_raref",
+                    "meco_moits_samsg_wrmed_raref",
+                    "meco_moits_seqsg_wrmed_raref")
+
+for(i in c(10,12)){
+  assign(names(to_save)[[i]],to_save[[i]])
+}
+rm(to_save)
+gc()
+```
+
+```{r}
+datasets <- c("meco_mo16s_samsg",
+              "meco_mo16s_seqsg",
+              "meco_moits_samsg",
+              "meco_moits_seqsg",
+              "meco_mo16s_samsg_wrmed",
+              "meco_mo16s_seqsg_wrmed",
+              "meco_moits_samsg_wrmed",
+              "meco_moits_seqsg_wrmed",
+              "meco_mo16s_samsg_raref",
+              "meco_mo16s_seqsg_raref",
+              "meco_moits_samsg_raref",
+              "meco_moits_seqsg_raref",
+              "meco_mo16s_samsg_wrmed_raref",
+              "meco_mo16s_seqsg_wrmed_raref",
+              "meco_moits_samsg_wrmed_raref",
+              "meco_moits_seqsg_wrmed_raref")
+datasets <- datasets[c(10,12)]
+```
+
+### Leaf traits
+
+```{r import_data, echo=FALSE,warning=FALSE}
+data_leaf <- read.csv("./articlez/gen1/data/data_art1.csv")
+data_leaf$Trtmt <- as.factor(data_leaf$Trtmt)
+levels(data_leaf$Trtmt)
+levels(data_leaf$Trtmt) <- c("R-D","I-D","P-D","R-W","I-W","P-W")
+data_leaf %<>% mutate(Trtmt = fct_relevel(Trtmt,"P-D","I-D","R-D","P-W","I-W","R-W"))
+
+mo_col <- c("#FFCC99","#993300","#330000","#5697f5","#1d61c2","#052d66")
+var_cat_col <- c("burlywood3","darkcyan","darkolivegreen4","chocolate3","darkslateblue","yellow3")
+```
+
+-   *FM*, *DM* and *TM* : *Fresh*, *Dry* and *Turgid* mass respectively (g)
+-   *mu_thick* : leaf thickness (cm)
+-   *LDMC* : Leaf dry mass content (g.g\^-1)
+-   *RWC* : Relative Water Content (%)
+-   *WHC* : Water Holding Capacity (gH20.m\^-2)
+-   *Nb_leaves* : Number of Leaves
+-   *Pl_H* : Plant height (cm)
+-   *LL_H* : Youngest mature leaf length (cm)
+-   *LL_W* : Youngest mature leaf width (cm)
+-   *chloro* : Leaf chlorophyll content (µg.cm\^-2)
+-   *FvFm* : PSII yield
+-   *ETRmax* : maximal electron transfert rate (µmol photon.m^-2.s^-1)
+-   *Water_pot* : water potential (MPa?)
+-   *C.N_leaf* : Leaf C/N ratio
+-   *SS_leaf* : Leaf soluble sugars (µg.mg\^-1)
+-   *Starch_leaf* : Leaf starch (µg.mg\^-1)
+-   *mean_trich_diam_inf* : abaxial face trichome diameter (mm)
+-   *mean_trich_diam_sup* : adaxial face trichome diameter (mm)
+-   *inf_trich_dens* : abaxial face trichome density (nb.mm\^-2)
+-   *sup_trich_dens* : adaxial face trichome density (nb.mm\^-2)
+-   *sto_dens* : stomatal density (nb.mm\^-2), only abaxial face, hypostomatous species
+-   *LMA* : Leaf Mass Area (g.m\^-2)
+-   *C-*, *N-* and *P-mg* : Carbon, Nitrogen and Phosphorous content (mg.mg\^-1)
+
+```{r}
+trait_list_glob <- c("Nb_leaves",
+                     "Pl_H",
+                     "LL_H",
+                     "LL_W",
+                     "LMA",
+                     "LDMC",
+                     "mu_thick",
+                     "sto_dens",
+                     "chloro",
+                     "FvFm",
+                     "ETRmax",
+                     "Water_pot",
+                     "RWC",
+                     "C.N_leaf",
+                     "SS_leaf",
+                     # "Starch_leaf",
+                     "Cmg",
+                     "Nmg",
+                     "Pmg",
+                     "Nb_Fr")
+Nbcol <- match(trait_list_glob,colnames(data_leaf))
+
+trait_df_name <- data.frame(rawnames=trait_list_glob,cleannames=c('Number of leaves','Plant height','Leaf length','Leaf width', 'LMA', 'LDMC', 'Thickness','Stomata','Chlorophyll','Fv/Fm','ETRmax','Water potential','RWC','C/N','Soluble sugar','Carbon','Nitrogen','Phosphorous',"Number of Flowers"))
+
+trait_df_name$unit <- c(bquote(""),
+                        bquote("(cm)"),
+                        bquote("(cm)"),
+                        bquote("(cm)"),
+                        bquote("(g.m"^-2~")"),
+                        bquote("(g.g"^1~")"),
+                        bquote("(mm)"),
+                        bquote("(mm"^2~")"),
+                        bquote("(mg.g"^-1~")"),
+                        bquote(""),
+                        bquote("(µmol.m"^-2~".s"^-1~")"),
+                        bquote("(MPa)"),
+                        bquote("(%)"),
+                        bquote(""),
+                        bquote("(µg.mg"^-1~")"),
+                        bquote("(mg.g"^-1~")"),
+                        bquote("(mg.g"^-1~")"),
+                        bquote("(mg.g"^-1~")"),
+                        bquote(""))
+
+var_cat <- c("biomass",
+             "biomass",
+             "biomass",
+             "biomass",
+             "structural",
+             "structural",
+             "structural",
+             "structural",
+             "photosynthesis",
+             "photosynthesis",
+             "photosynthesis",
+             "water",
+             "water",
+             "nutrient",
+             "nutrient",
+             "nutrient",
+             "nutrient",
+             'nutrient',
+             'reproduction')
+
+trait_df_name %<>% mutate(var_cat=as.factor(var_cat))
+
+df_col_var <- data.frame(var_cat=c("biomass",
+                                   "nutrient",
+                                   "photosynthesis",
+                                   "structural",
+                                   "water",
+                                   "reproduction",
+                                   "otus"),
+                         colorz=c("burlywood3",
+                                  "darkcyan",
+                                  "darkolivegreen4",
+                                  "chocolate3",
+                                  "darkslateblue",
+                                  "yellow3",
+                                  "darkred"))
+trait_df_name%<>%left_join(df_col_var)
+```
+
+# II Run analysis
+
+## leaf traits char
+
+### Traits table
+
+```{r}
+Stat_Frame <- matrix(0,19,4)
+data2 <- data_leaf[,c(1:5,Nbcol)]
+col_idx <- 5
+for ( i in data2[,c(6:23)]){
+  col_idx <- col_idx + 1
+  name <- names(data2[col_idx])
+  row <- as.numeric(match(name, names(data2)))
+  #kruskal
+  a <- kruskal.test(i~data2$Trtmt)
+  chi2kw <- a$statistic[[1]]
+  df <- a$parameter[[1]]
+  pval <- a$p.value
+  Stat_Frame[row-5, 1] <- name
+  Stat_Frame[row-5, 2] <- df
+  Stat_Frame[row-5, 3] <- chi2kw
+  Stat_Frame[row-5, 4] <- pval
+}
+
+colnames(Stat_Frame) <- c("var","df","chi2","krusk_pval")
+
+
+Mean_sd_Frame <- matrix(0,19,15)
+col_idx <- 5
+for ( i in data2[,6:23]){
+  col_idx <- col_idx + 1
+  name <- names(data2[col_idx])
+  moy <- as.numeric(tapply(i,data2$Trtmt,mean,na.rm = T))
+  sd <- as.numeric(tapply(i,data2$Trtmt,sd,na.rm = T))
+  row <- as.numeric(match(name, names(data2)))
+  mean_glob <- as.numeric(mean(i,na.rm = T))
+  sd_glob <- as.numeric(sd(i,na.rm = T))
+  coef_var <- (sd_glob/mean_glob)*100
+  Mean_sd_Frame[row-5,1] <- name
+  Mean_sd_Frame[row-5,2] <- signif(moy[1],digits = 3)
+  Mean_sd_Frame[row-5,4] <- signif(moy[2],digits = 3)
+  Mean_sd_Frame[row-5,6] <- signif(moy[3],digits = 3)
+  Mean_sd_Frame[row-5,8] <- signif(moy[4],digits = 3)
+  Mean_sd_Frame[row-5,10] <- signif(moy[5],digits = 3)
+  Mean_sd_Frame[row-5,12] <- signif(moy[6],digits = 3)
+  
+  Mean_sd_Frame[row-5,3] <- signif(sd[1],digits = 3)
+  Mean_sd_Frame[row-5,5] <- signif(sd[2],digits = 3)
+  Mean_sd_Frame[row-5,7] <- signif(sd[3],digits = 3)
+  Mean_sd_Frame[row-5,9] <- signif(sd[4],digits = 3)
+  Mean_sd_Frame[row-5,11] <- signif(sd[5],digits = 3)
+  Mean_sd_Frame[row-5,13] <- signif(sd[6],digits = 3)
+  
+  Mean_sd_Frame[row-5,14] <- signif(mean_glob,digits = 3)
+  Mean_sd_Frame[row-5,15] <- signif(sd_glob,digits = 3)
+  
+}
+
+rm(sd)
+data2 %>%
+  group_by(Trtmt) %>%
+  summarise(across(
+    .cols = where(is.numeric), 
+    .fns = list(mean = mean,sd =sd), na.rm=T,
+    .names = "{col}_{fn}"
+  ))
+
+colnames(Mean_sd_Frame) <- c("var",
+                             "P-D_mu","P-D_sd",
+                             "I-D_mu","I-D_sd",
+                             "R-D_mu", "R-D_sd",
+                             "P-W_mu","P-W_sd",
+                             "I-W_mu","I-W_sd",
+                             "R-W_mu", "R-W_sd",
+                             "global_mu", "global_sd")
+Mean_sd_Frame <- as.data.frame(Mean_sd_Frame)
+```
+
+```{r}
+source("./articlez/gen1/script/pairwise_letterZ.R")
+```
+
+```{r}
+letter_comp <- matrix(0,19,7)
+
+col_idx <- 5
+for (i in data2[,6:23]){
+  
+  col_idx <- col_idx + 1
+  cld_vec <- pairwise_letterZ(data2,data2$Trtmt,i)
+  cld_vec <- cld_vec[[1]]
+  name <- names(data2[col_idx])
+  row <- as.numeric(match(name, names(data2)))
+  
+  a <- ifelse(kruskal.test(i,data2$Trtmt)$p.value<0.05,1,0) 
+  
+  
+  letter_comp[row-5,1] <- name
+  ifelse(a==1,letter_comp[row-5,2] <- cld_vec[1],letter_comp[row-5,2] <- " ")
+  ifelse(a==1,letter_comp[row-5,3] <- cld_vec[2],letter_comp[row-5,3] <- " ")
+  ifelse(a==1,letter_comp[row-5,4] <- cld_vec[3],letter_comp[row-5,4] <- " ")
+  ifelse(a==1,letter_comp[row-5,5] <- cld_vec[4],letter_comp[row-5,5] <- " ")
+  ifelse(a==1,letter_comp[row-5,6] <- cld_vec[5],letter_comp[row-5,6] <- " ")
+  ifelse(a==1,letter_comp[row-5,7] <- cld_vec[6],letter_comp[row-5,7] <- " ")
+}
+
+letter_df <- as.data.frame(letter_comp)
+names( letter_df) <- c("var","P-D","I-D","R-D","P-W","I-W","R-W")
+```
+
+```{r}
+Mean_sd_Frame %<>%           
+  mutate(`KW-chi`=as.numeric(Stat_Frame[,3]),
+         `P-val`=as.character(Stat_Frame[,4])) %>%
+  dplyr::select(-c(global_mu,global_sd)) 
+```
+
+```{r}
+Mean_sd_Frame %<>% 
+  add_column(.after = 3,V2=ifelse(letter_df$`P-D`!= " ",paste0("(",letter_df$`P-D`,")")," "))%>%
+  add_column(.after = 6,V3=ifelse(letter_df$`I-D`!= " ",paste0("(",letter_df$`I-D`,")")," "))%>%
+  add_column(.after = 9,V4=ifelse(letter_df$`R-D`!= " ",paste0("(",letter_df$`R-D`,")")," "))%>%
+  add_column(.after = 12,V5=ifelse(letter_df$`P-W`!= " ",paste0("(",letter_df$`P-W`,")")," "))%>%
+  add_column(.after = 15,V6=ifelse(letter_df$`I-W`!= " ",paste0("(",letter_df$`I-W`,")")," "))%>%
+  add_column(.after = 18,V7=ifelse(letter_df$`R-W`!= " ",paste0("(",letter_df$`R-W`,")")," "))
+```
+
+```{r}
+NewVarNames <-  trait_df_name$cleannames
+```
+
+```{r}
+options(scipen=999)
+Mean_SD_Flex <-   Mean_sd_Frame%>%
+  dplyr::slice(-14)%>%
+  mutate(var = NewVarNames[-14])%>%
+  unite("P-D",c(`P-D_mu`,`P-D_sd`),sep=" ± ")%>%
+  unite("I-D",c(`I-D_mu`,`I-D_sd`),sep=" ± ")%>%
+  unite("R-D",c(`R-D_mu`,`R-D_sd`),sep=" ± ")%>%
+  unite("P-W",c(`P-W_mu`,`P-W_sd`),sep=" ± ")%>%
+  unite("I-W",c(`I-W_mu`,`I-W_sd`),sep=" ± ")%>%
+  unite("R-W",c(`R-W_mu`,`R-W_sd`),sep=" ± ")%>%  
+  unite("P-D",c(`P-D`,V2), sep = " ")%>%
+  unite("I-D",c(`I-D`,V3), sep = " ")%>%
+  unite("R-D",c(`R-D`,V4), sep = " ")%>%
+  unite("P-W",c(`P-W`,V5), sep = " ")%>%
+  unite("I-W",c(`I-W`,V6), sep = " ")%>%
+  unite("R-W",c(`R-W`,V7), sep = " ")%>%
+  mutate(`P-val`=round(as.numeric(`P-val`),digits=5))%>%
+  mutate(`KW-chi`=round(as.numeric(`KW-chi`),digits=3))%>%
+  mutate(`P-val`=ifelse(`P-val`<0.0001,"<0.0001",`P-val`))%>%
+  flextable::flextable()%>%
+  fontsize(size=8, part = "body")%>%
+  height_all(height = .3 )%>%
+  # theme_vanilla()%>%
+  add_header_row(top = T,values = c("Traits","Mean ± SD","Significance" ), colwidths = c(1,6,2))%>%
+  set_header_labels("var"=NA,"variation_coeff"="%")%>%
+  align(align = "center", part = "all")%>%
+  flextable::compose(j=1,i=10, value = as_paragraph("F",as_sub("v"),"F",as_sub("m")))%>%
+  flextable::compose(j=1,i=11, value = as_paragraph("ETR",as_sub("max")))%>%
+  bold(i=~`P-val`<0.05,j=9)%>%
+  fontsize(i=2,part="header",size=10)%>%
+  fontsize(i=1,part="header",size=12)%>%
+  flextable::width(j=1:9,width = c(2,3,3,3,3,3,3,1.5,2.5),unit = "cm")%>%
+  add_footer_lines(values = "Statistical summary table. For each trait the mean ± standard deviation (SD) is displayed for the three treatments. The associated Kruskal Wallis Chi² and P-values are shown. Significant P-values (<0.05) are in bold. Letters within brackets indicates significant pairwise differences, Wilcoxon pairwise test (\U03B1 < 0.05). Growth, Amax, GSmax and AUC have been measured on different plants. Treatments are P-D, Poor-Dry; I-D, Intermediate-Dry; R-D, Rich-Dry; P-W, Poor-Wet; I-W, Intermediate-Wet and; R-W, Rich-Wet.")%>%
+  fontsize(part = "footer", size=6)%>%
+  set_table_properties(width=0)
+```
+
+Export it to a docx compatible format
+
+```{r}
+library(officer)
+spec_properties <- prop_section(
+  page_size = page_size(orient = "portrait",
+                        width = (30/2.54), height = (30/2.54)),
+  type = "continuous",
+  page_margins = page_mar(bottom = .05,
+                          top = .05,
+                          right = 1,
+                          left = 1,
+                          header = 0.5,
+                          footer = 0.5,
+                          gutter = 0.5)
+)
+
+save_as_docx(Mean_SD_Flex,path="./articlez/gen1/resultats/final/traits/traits.docx", pr_section = spec_properties)
+```
+
+### PCA leaf traits
+
+```{r}
+PCA_plant_trait <- PCA(data_leaf[,Nbcol[-c(14)]], scale.unit = T,  graph  = F ,ncp=length(Nbcol)-1)
+```
+
+```{r}
+#check the hypothesis that dispersion is roughly the same between my groups in multivariate space
+dis <- vegdist(data_leaf[,Nbcol[-c(14)]],method="euclidean") #we create a distance matrix between our individuals
+mod <- betadisper(dis,data_leaf$Trtmt) #we calculate the multivarite dispersions i.e. average distance to centroids
+anova(mod) #now we check that they are no difference between our groups i.e. our idnividuals have the same dispersion in the multivariate space
+
+#p-value = 0.01049   significative so our group dispersion is heterogeneous between habitats
+k = 1000
+adon.res1 <- adonis2(scale(data_leaf[,Nbcol[-c(14,33)]])~data_leaf$Trtmt, perm = k, na.rm = T, method = "euclidean",p.adjust.methods="holm" ) 
+adon.res1%>%
+  flextable()%>%
+  save_as_image(path="./articlez/gen1/resultats/final/traits/permanova_pca.png")
+```
+
+```{r}
+pair.adon.res1 <- pairwiseAdonis::pairwise.adonis(scale(data_leaf[,Nbcol[-c(14,33)]]),data_leaf$Trtmt,p.adjust.m = "holm", sim.method = "euclidean", perm=k)
+pair.adon.res1%>%
+  flextable()%>%
+  save_as_image(path="./articlez/gen1/resultats/final/traits/pwise_permanova_pca.png")
+```
+
+## TITAN
+
+```{r}
+TITcom_list <- NULL
+for(i in datasets){
+  tmp <- get(i)
+  tmp <- clone(tmp)
+  TITcom <- t(tmp$otu_table)
+  TITcom <- TITcom[,colSums(TITcom != 0)>=ceiling(nrow(tmp$sample_table)*0.05)] # remove otus present in less than 5% samples
+  # TITcom <- TITcom[,colSums(TITcom)>100] # keep otus with more than 100 reads
+  rownames(TITcom) <- as.numeric(gsub("_.+$","",rownames(TITcom))) # rename rows as numbers
+  TITenv <- data_leaf[data_leaf$number%in%rownames(TITcom),Nbcol] # get leaf data of samples for which i have the community
+  tmp$sample_table$sample_id
+  rownames(TITenv) <- rownames(data_leaf[data_leaf$number%in%rownames(TITcom),]) # rename rows as numbers
+
+  z <- TITcom # rename
+  quiet_titan <- quietly(titan)
+  # x <- TITenv
+  # n <- names(TITenv)
+  TITcom_list[[i]] <- TITcom
+  walk2(TITenv, names(TITenv), function(x, n) { # iterate titan for all tra16s of TITenv
+    y <- z[!is.na(x),] # rm when having na in env
+    y <- y[,apply(y, 2, function(x) sum(x>0))>3] # rm otus present less than 3 times in the data (alrdy done)
+    x <- x[!is.na(x)]
+
+    dir <- file.path(paste0("./articlez/gen1/resultats/final/titan/",i,"/"))
+    if (!dir.exists(dir)) dir.create(dir)
+    if(!dir.exists(paste0(dir,"/res_",n,".RDS")))titan(x, y, nBoot = 500, ncpus = 3, messaging = FALSE) %>%
+      saveRDS(paste0(dir,"/res_",n,".RDS")) # save the results in a .RDS file
+  })
+  gc()
+}
+```
+
+```{r}
+TITcom_list$meco_mo16s_seqsg_raref%>%
+  reshape2::melt()%>%
+  group_by(Var2)%>%
+  summarise(depths=sum(value))%>%
+  ggplot(aes(x=log(depths)))+
+  geom_histogram()+
+  theme_classic2()+
+  ggtitle("Bacteria")+
+  TITcom_list$meco_moits_seqsg_raref%>%
+  reshape2::melt()%>%
+  group_by(Var2)%>%
+  summarise(depths=sum(value))%>%
+  ggplot(aes(x=log(depths)))+
+  geom_histogram()+
+  theme_classic2()+
+  ggtitle("Fungi")
+```
+
+
+## TITAN on PCA
+
+```{r}
+TITcom_list_pca <- NULL
+for(i in datasets){
+  tmp <- get(i)
+  tmp <- clone(tmp)
+  TITcom <- t(tmp$otu_table)
+  TITcom <- TITcom[,colSums(TITcom != 0)>=ceiling(nrow(tmp$sample_table)*0.05)] # remove otus present in less than 5% samples
+  # TITcom <- TITcom[,colSums(TITcom)>100] # keep otus with more than 100 reads
+  rownames(TITcom) <- as.numeric(gsub("_.+$","",rownames(TITcom))) # rename rows as numbers
+  TITenv <- data_leaf[data_leaf$number%in%rownames(TITcom),Nbcol] # get leaf data of samples for which i have the community
+
+  pca_tmp <- PCA_plant_trait$ind$coord
+  pca_tmp%<>%
+    as.data.frame()%>%
+    mutate(rownumber=rownames(.),
+           number=data_leaf$number)
+
+  TITenv$PCA1 <- PCA_plant_trait$ind$coord[ which(pca_tmp$number%in%rownames(TITcom)),"Dim.1"]
+  TITenv$PCA2 <- PCA_plant_trait$ind$coord[ which(pca_tmp$number%in%rownames(TITcom)),"Dim.2"]
+
+  tmp$sample_table$sample_id
+  rownames(TITenv) <- rownames(data_leaf[data_leaf$number%in%rownames(TITcom),]) # rename rows as numbers
+
+  z <- TITcom # rename
+  quiet_titan <- quietly(titan)
+  # x <- TITenv
+  # n <- names(TITenv)
+  TITcom_list_pca[[i]] <- TITcom
+  walk2(TITenv[,c("PCA1","PCA2")], c("PCA1","PCA2"), function(x, n) { # iterate titan for all tra16s of TITenv
+    y <- z[!is.na(x),] # rm when having na in env
+    y <- y[,apply(y, 2, function(x) sum(x>0))>3] # rm otus present less than 3 times in the data (alrdy done)
+    x <- x[!is.na(x)]
+
+    dir <- file.path(paste0("./articlez/gen1/resultats/final/titan/",i,"/"))
+    if (!dir.exists(dir)) dir.create(dir)
+    if(!dir.exists(paste0(dir,"/res_",n,".RDS")))titan(x, y, nBoot = 500, ncpus = 3, messaging = FALSE) %>%
+      saveRDS(paste0(dir,"/res_",n,".RDS")) # save the results in a .RDS file
+  })
+  gc()
+}
+
+```
+
+
+
+## Diablo
+
+```{r}
+diablo_mod <- NULL
+for(i in datasets){
+  data_tmp <- get(i)
+  data_tmp <- clone(data_tmp)
+  for (j in c("hell","clr")){
+  # for(j in c("titancut","uncut")){
+  #
+  mixomics_com <- t(data_tmp$otu_table)
+  # if(j=='titancut'){
+  #       mixomics_com <- mixomics_com[,which(colSums(mixomics_com)>99)] # remove samplewise singletons
+  #
+  # }else{
+  #         mixomics_com <- mixomics_com
+  #
+  #   }
+  #   mixomics_com[,which(colSums(mixomics_com!=0)!=1)] # remove samplewise singletons
+  mixomics_com <- mixomics_com[,colSums(mixomics_com != 0)>=ceiling(nrow(data_tmp$sample_table)*0.05)] #5% prevalence filter
+  
+  if(j == "hell"){
+    mixomics_com <- labdsv::hellinger(mixomics_com)
+  }else{
+    mixomics_com <- compositions::clr(mixomics_com)
+  }
+  #  mixomics_com <- compositions::clr(mixomics_com)
+  # mixomics_com <- labdsv::hellinger(mixomics_com)
+  treat <- data_tmp$sample_table$Trtmt
+  mixomics_env <-data_tmp$sample_table[,trait_list_glob] %>%
+    dplyr::select(!(`C.N_leaf`))
+
+  colnames(mixomics_com) <- gsub("M","",colnames(mixomics_com))
+  colnames(mixomics_env) <- trait_df_name$cleannames[match(colnames(mixomics_env),trait_df_name$rawnames)]
+
+  mydata <- list(Leaf_traits = scale(mixomics_env), OTUs_com = mixomics_com) #Here you build your two datasets that should be integrated
+
+
+  mydiablo <- block.splsda(X=mydata, Y=treat,ncomp=5,near.zero.var = T) #Here you build the sPLS-DA model Filter near zero var taxa
+
+  plotDiablo(mydiablo, ncomp=1,col.per.group =mo_col)
+
+  perf.diablo <- perf(mydiablo, validation = 'Mfold', folds = 3, nrepeat = 100,progressBar = T)
+
+  plot(perf.diablo)
+
+
+  # set the optimal ncomp value
+  ncomp <- perf.diablo$choice.ncomp$WeightedVote["Overall.BER", "centroids.dist"]
+  # show the optimal choice for ncomp for each dist metric
+  perf.diablo$choice.ncomp$WeightedVote
+
+
+  # set grid of values for each component to test
+  test.keepX <- list (Leaf_traits = c(1:ncol(mydata$Leaf_traits)),
+                      OTUs_com = seq(10,ncol(mydata$OTUs_com),15))
+
+  # for square matrix filled with 0.1s
+  design = matrix(.5, ncol = length(mydata), nrow = length(mydata),
+                  dimnames = list(names(mydata), names(mydata)))
+  diag(design) = 0 # set diagonal to 0s
+
+  design
+
+
+  # run the feature selection tuning
+  tune.diablo <- tune.block.splsda(X = mydata,
+                                   Y = treat,
+                                   ncomp = ncomp,
+                                   test.keepX = test.keepX,
+                                   validation = 'Mfold',
+                                   design=design,
+                                   folds = 3,
+                                   nrepeat = 100,
+                                   progressBar = T,
+                                   dist = "centroids.dist")
+
+
+  list.keepX <- tune.diablo$choice.keepX # set the optimal values of features to retain
+
+  # set the optimised DIABLO model
+  final.diablo.model  <-  block.splsda(X = mydata, Y = treat, ncomp = ncomp,
+                                       keepX = list.keepX, design = design)
+
+
+  # [[j]]
+  diablo_mod[[i]][[j]][["nontuned"]] <- mydiablo
+  diablo_mod[[i]][[j]][["perfing"]] <- perf.diablo
+  diablo_mod[[i]][[j]][["tuning"]] <- tune.diablo
+  diablo_mod[[i]][[j]][["final"]] <- final.diablo.model
+  }
+}
+```
+
+```{r}
+save(file = "./articlez/gen1/resultats/final/mixomics/diablo_rds.rds",diablo_mod)
+```
+
+```{r}
+save.image(file = "./articlez/gen1/resultats/final/env_analysis.RData")
+```
+

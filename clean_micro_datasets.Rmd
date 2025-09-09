@@ -1,0 +1,1645 @@
+```{r}
+EcophyCofog::Library(c("dplyr","readr","FactoMineR","RColorBrewer","magrittr","ggplot2",
+          "forcats","phyloseq","phylosmith","DESeq2","microeco","microViz","speedyseq",
+          "stringr","factoextra","ggpubr","reshape2","data.table",
+          "patchwork","scales","tidyr","ggConvexHull","ggvegan","purrr","EcophyCofog","hillR",
+          "plotly","metabaR"))
+
+source("./Scripts/functions/cld_bxplot_wilcox.R")
+```
+
+
+# load
+
+```{r}
+load("./articlez/gen1/data/clean_mlist_and_physeq_ff.RData")
+rm(cleaned_metablist)
+mother_16s <- physeqlists$metab_16s$d %>%
+  filter_sample_data(project=="HOLOBROM_FE") #68 samples
+
+mother_ITS <- physeqlists$metab_its$b %>%
+  filter_sample_data(project=="HOLOBROM_MERES" & organ=="LEAVES") #80samples
+
+sub_16s_soils <- physeqlists$metab_16s$d %>%
+  filter_sample_data(organ=="SOIL")%>%
+  filter_sample_data(grepl("P",sample_id))
+
+sub_its_soils <- physeqlists$metab_its$a %>%
+  filter_sample_data(organ=="SOIL")%>%
+  filter_sample_data(grepl("P",sample_id))
+
+rm(cleaned_metablist,physeqlists)
+gc()
+```
+
+
+```{r}
+data_leaf <- read.csv("./articlez/gen1/data/data_art1.csv")
+data_leaf$Trtmt <- as.factor(data_leaf$Trtmt)
+levels(data_leaf$Trtmt)
+levels(data_leaf$Trtmt) <- c("R-D","I-D","P-D","R-W","I-W","P-W")
+data_leaf %<>% mutate(Trtmt = fct_relevel(Trtmt,"P-D","I-D","R-D","P-W","I-W","R-W"))
+
+mo_col <- c("#FFCC99","#993300","#330000","#5697f5","#1d61c2","#052d66")
+soil_col <- c("#ffe1b0","#6b5e49","#0f0d0a")
+```
+
+### Set up and cleaning
+
+Add biological information to my microbiota datasets
+```{r}
+mother_16s <- mother_16s %>% mutate_sample_data(number = as.numeric(str_extract(sample_id,"^\\d+"))) # get plant ID
+data_16s <- ps_join(mother_16s,data_leaf, by="number") # merge leaf data with microbiota data
+data_16s <- subset_samples(data_16s, sample_id != "0_FEpl4_d") #rm mother plant (ided 0)
+mother_ITS <- mother_ITS %>% mutate_sample_data(number = as.numeric(str_extract(sample_id,"^\\d+")))
+data_ITS <- ps_join(mother_ITS,data_leaf, by="number")
+data_ITS <- subset_samples(data_ITS, sample_id != "0_FEpl4_g") #rm mother plant (ided 0)
+data_ITS <- subset_samples(data_ITS, number != 0) #rm mother plant (ided 0)
+```
+
+```{r}
+nsamples(mother_16s)
+nsamples(mother_ITS)
+```
+
+
+Convert to microeco tableclass and keep only confident taxo assignment
+```{r}
+meco_mo16s <- file2meco::phyloseq2meco(data_16s)
+meco_moits <- file2meco::phyloseq2meco(data_ITS)# it removes taxa that have 0 abundance 
+
+meco_mo16s$ori_tax <- meco_mo16s$tax_table %>% dplyr::select(!c(18:23)) # store original taxa table
+meco_moits$ori_tax <- meco_moits$tax_table %>% dplyr::select(!c(20:26))
+meco_mo16s$tax_table <- meco_mo16s$tax_table %>% dplyr::select(c(18:23)) # filter to keep only confident assignment
+meco_moits$tax_table <- meco_moits$tax_table %>% dplyr::select(c(20:26))
+```
+
+Check for our samples the sequencing depth
+```{r}
+meco_mo16s$sample_sums() %>% range;sum(meco_mo16s$sample_sums()) # 35* fold difference in range: min reads in a sample, max reads **, total dataset reads
+meco_mo16s$taxa_sums() %>% range;sum(meco_mo16s$taxa_sums()) # 
+which(meco_mo16s$taxa_sums()==1416859) # MOTU_73589  is accounting for 2 third of my reads 1416859/1918158=0.073
+meco_mo16s$tax_table[which(rownames(meco_mo16s$tax_table)=="MOTU_73589"),] # and is a mitochondria...
+meco_mo16s$tidy_dataset()
+```
+
+
+rm chloropast, archaea and mitochondria
+```{r}
+meco_mo16s$filter_pollution(taxa = c("chloroplast","archaea","mitochondria")) # "mitochondria" to be added
+meco_mo16s$tidy_dataset() # modify all tables accordingly
+```
+Singletons 
+
+
+### Singletons
+
+Visualize number of singletons
+```{r}
+singleton_seq_plots_list <- NULL
+for(i in c("meco_mo16s","meco_moits")){
+  
+  data_tmp <- get(i)
+  data_tmp <- clone(data_tmp)
+  
+  
+  n_single_asv <- sum(rowSums(data_tmp$otu_table)==1) # number of single read sequences
+  n_non_single_asv <- sum(rowSums(data_tmp$otu_table)>1) # number of non single asvs
+  n_single_reads <- sum(data_tmp$otu_table[which(rowSums(data_tmp$otu_table)==1),]) # number of reads from the data set that correspond to asv singletons (sum of reads on singletons subset)
+  n_non_single_reads <- sum(data_tmp$otu_table[which(rowSums(data_tmp$otu_table)>1),]) # same but for non singletons
+  
+  df_tmp <- data.frame(asv_val=c(n_single_asv,n_non_single_asv),
+                       read_val=c(n_single_reads,n_non_single_reads),
+                       type=c("n_single","n_non_single"))
+  df_tmp %<>% mutate(pct_asvs=asv_val/sum(asv_val), # convert to %
+                     pct_reads=read_val/sum(data_tmp$otu_table))%>%
+    reshape2::melt()%>%
+    filter(grepl("pct",variable))
+  
+  singletons <- ggplot(df_tmp,aes(x = variable,y = value, fill=type))+
+    geom_bar(position="stack",stat = "identity")+
+    theme_classic2()+
+    scale_fill_manual(values = c("lightseagreen","mediumvioletred"))+
+    theme(plot.title = element_text(face='bold'))+
+    ylab("% of singletons")+
+    xlab("ASVs vs Reads")+
+    scale_y_continuous(expand = c(0,0))
+  
+  
+  alpha <- colSums(data_tmp$otu_table!=0) # sample alpha diversity as the number of non null rows (asvs)
+  single_asv <-  colSums(filter(data_tmp$otu_table,rowSums(data_tmp$otu_table)==1)==1) # number of singletons asvs within sample as the number of asvs restricted to this sample (subset rowsums) and with one read (==1)
+  # non_single_asv2 <- colSums(data_tmp$otu_table>1)
+  non_single_asv <- alpha-single_asv # ASVs that might be singletons within the sample but not the dataset 
+  df_tmp <- data.frame(value = c(rbind(single_asv,non_single_asv)),
+                       type=c("n_single","n_non_single"),
+                       sample=rep(1:ncol(data_tmp$otu_table),each=2))%>%
+    group_by(sample)%>%
+    mutate(val_pct= value/sum(value))
+  
+  alpha_plot <- ggplot(df_tmp,aes(x=sample,y=value,fill=type))+
+    geom_bar(stat="identity",position = "stack",width = 1)+
+    theme_classic2()+
+    ggtitle(paste0(i," sequence singletons repartition"))+
+    theme(plot.title = element_text(face='bold'))+
+    scale_y_continuous(expand = c(0,0))+
+    scale_x_continuous(expand = c(0,0))+
+    xlab("samples")+
+    ylab("Richness")+
+    scale_fill_manual(values=c("lightseagreen","mediumvioletred"))
+  
+  alpha_plot_pct <- ggplot(df_tmp,aes(x=sample,y=val_pct,fill=type))+
+    geom_bar(stat="identity",position = "stack",width = 1)+
+    theme_classic2()+
+    theme(plot.title = element_text(face='bold'))+
+    scale_y_continuous(expand = c(0,0))+
+    scale_x_continuous(expand = c(0,0))+
+    xlab("samples")+
+    ylab("Richness")+
+    scale_fill_manual(values=c("lightseagreen","mediumvioletred"))
+  
+  
+  data_tmp_singl <- clone(data_tmp)
+  data_tmp_singl$otu_table %<>% filter(rowSums(.)==1)
+  data_tmp_singl$tidy_dataset()
+  data_tmp_singl$sample_table %<>% mutate(dumb_group = "sample")
+  data_tmp_singl$cal_abund()
+  data_tmp_singl <- trans_abund$new(data_tmp_singl,taxrank = "Genus_conf",ntaxa = 8,groupmean = "dumb_group")
+  
+  plot_data <- data_tmp_singl$data_abund
+  use_taxanames <- c(data_tmp_singl$data_taxanames,"unidentified")
+  plot_data$Taxonomy[!plot_data$Taxonomy %in% use_taxanames] <- "Others"
+  plot_data %<>% 
+    dplyr::group_by(!!!syms(c("Taxonomy","Sample"))) %>% 
+    dplyr::summarise(Abundance = sum(Abundance)) %>% 
+    as.data.frame(stringsAsFactors = FALSE)
+  plot_data$Taxonomy %<>% factor(., levels = c(use_taxanames[-9], "Others", "unidentified"))
+  plot_data$label <- paste0(round(plot_data$Abundance, 1),"%")
+  donut_comp <- ggdonutchart(plot_data,"Abundance",
+                             fill="Taxonomy",
+                             label = "label",
+                             color = "white",
+                             palette = c(colorRampPalette(brewer.pal(8, "Dark2"))(9),"lightgrey"))+
+    theme(legend.position = "right")
+  
+  
+  singleton_plots <- alpha_plot + theme(legend.position = "n") + alpha_plot_pct + singletons + theme(legend.position = "n") + donut_comp  + plot_layout(widths = c(1, 1))
+  singleton_seq_plots_list[[i]] <- singleton_plots
+}
+```
+
+```{r}
+singleton_seq_plots_list
+ggsave("./articlez/gen1/resultats/final/singletons_16s.png",singleton_seq_plots_list$meco_mo16s)
+ggsave("./articlez/gen1/resultats/final/singletons_its.png",singleton_seq_plots_list$meco_moits)
+```
+
+
+```{r}
+singleton_sam_plots_list <- NULL
+for(i in c("meco_mo16s","meco_moits")){
+  
+  data_tmp <- get(i)
+  data_tmp <- clone(data_tmp)
+  
+  n_single_asv <- sum(rowSums(data_tmp$otu_table>0)==1) # number of single read sequences
+  n_non_single_asv <- sum(rowSums(data_tmp$otu_table>0)>1) # number of non single asvs
+  n_single_reads <- sum(data_tmp$otu_table[which(rowSums(data_tmp$otu_table>0)==1),]) # number of reads from the data set that correspond to asv singletons (sum of reads on singletons subset)
+  n_non_single_reads <- sum(data_tmp$otu_table[which(rowSums(data_tmp$otu_table>0)>1),]) # same but for non singletons
+  
+  df_tmp <- data.frame(asv_val=c(n_single_asv,n_non_single_asv),
+                       read_val=c(n_single_reads,n_non_single_reads),
+                       type=c("n_single","n_non_single"))
+  df_tmp %<>% mutate(pct_asvs=asv_val/sum(asv_val), # convert to %
+                     pct_reads=read_val/sum(data_tmp$otu_table))%>%
+    reshape2::melt()%>%
+    filter(grepl("pct",variable))
+  
+  singletons <- ggplot(df_tmp,aes(x = variable,y = value, fill=type))+
+    geom_bar(position="stack",stat = "identity")+
+    theme_classic2()+
+    scale_fill_manual(values = c("lightseagreen","mediumvioletred"))+
+    theme(plot.title = element_text(face='bold'))+
+    ylab("% of singletons")+
+    xlab("ASVs vs Reads")+
+    scale_y_continuous(expand = c(0,0))
+  
+  
+  alpha <- colSums(data_tmp$otu_table!=0) # sample alpha diversity as the number of non null rows (asvs)
+  single_asv <-  colSums(filter(data_tmp$otu_table,rowSums(data_tmp$otu_table>0)==1)==1) # number of singletons asvs within sample as the number of asvs restricted to this sample (subset rowsums) and with one read (==1)
+  # non_single_asv2 <- colSums(data_tmp$otu_table>1)
+  non_single_asv <- alpha-single_asv # ASVs that might be singletons within the sample but not the dataset 
+  df_tmp <- data.frame(value = c(rbind(single_asv,non_single_asv)),
+                       type=c("n_single","n_non_single"),
+                       sample=rep(1:ncol(data_tmp$otu_table),each=2))%>%
+    group_by(sample)%>%
+    mutate(val_pct= value/sum(value))
+  
+  alpha_plot <- ggplot(df_tmp,aes(x=sample,y=value,fill=type))+
+    geom_bar(stat="identity",position = "stack",width = 1)+
+    theme_classic2()+
+    ggtitle(paste0(i," sample singletons repartition"))+
+    theme(plot.title = element_text(face='bold'))+
+    scale_y_continuous(expand = c(0,0))+
+    scale_x_continuous(expand = c(0,0))+
+    xlab("samples")+
+    ylab("Richness")+
+    scale_fill_manual(values=c("lightseagreen","mediumvioletred"))
+  
+  alpha_plot_pct <- ggplot(df_tmp,aes(x=sample,y=val_pct,fill=type))+
+    geom_bar(stat="identity",position = "stack",width = 1)+
+    theme_classic2()+
+    theme(plot.title = element_text(face='bold'))+
+    scale_y_continuous(expand = c(0,0))+
+    scale_x_continuous(expand = c(0,0))+
+    xlab("samples")+
+    ylab("Richness")+
+    scale_fill_manual(values=c("lightseagreen","mediumvioletred"))
+  
+  
+  data_tmp_singl <- clone(data_tmp)
+  data_tmp_singl$otu_table %<>% filter(rowSums(.)==1)
+  data_tmp_singl$tidy_dataset()
+  data_tmp_singl$sample_table %<>% mutate(dumb_group = "sample")
+  data_tmp_singl$cal_abund()
+  data_tmp_singl <- trans_abund$new(data_tmp_singl,taxrank = "Genus_conf",ntaxa = 8,groupmean = "dumb_group")
+  
+  plot_data <- data_tmp_singl$data_abund
+  use_taxanames <- c(data_tmp_singl$data_taxanames,"unidentified")
+  plot_data$Taxonomy[!plot_data$Taxonomy %in% use_taxanames] <- "Others"
+  plot_data %<>% 
+    dplyr::group_by(!!!syms(c("Taxonomy","Sample"))) %>% 
+    dplyr::summarise(Abundance = sum(Abundance)) %>% 
+    as.data.frame(stringsAsFactors = FALSE)
+  plot_data$Taxonomy %<>% factor(., levels = c(use_taxanames[-9], "Others", "unidentified"))
+  plot_data$label <- paste0(round(plot_data$Abundance, 1),"%")
+  donut_comp <- ggdonutchart(plot_data,"Abundance",
+                             fill="Taxonomy",
+                             label = "label",
+                             color = "white",
+                             palette = c(colorRampPalette(brewer.pal(8, "Dark2"))(9),"lightgrey"))+
+    theme(legend.position = "right")
+  
+  
+  singleton_plots <- alpha_plot + theme(legend.position = "n") + alpha_plot_pct + singletons + theme(legend.position = "n") + donut_comp  + plot_layout(widths = c(1, 1))
+  singleton_sam_plots_list[[i]] <- singleton_plots
+}
+```
+
+
+```{r}
+ggsave("./articlez/gen1/resultats/final/singletons_sam_16s.png",singleton_sam_plots_list$meco_mo16s)
+ggsave("./articlez/gen1/resultats/final/singletons_sam_its.png",singleton_sam_plots_list$meco_moits)
+```
+
+
+```{r}
+for(i in c("meco_mo16s","meco_moits")){
+  
+  data_tmp <- get(i)
+  data_tmp <- clone(data_tmp)
+  
+  data_tmp_seqsg <- clone(data_tmp)
+  data_tmp_samsg <- clone(data_tmp)
+  
+  data_tmp_seqsg$otu_table_ori <- data_tmp_seqsg$otu_table 
+  data_tmp_samsg$otu_table_ori <- data_tmp_samsg$otu_table
+  
+  data_tmp_seqsg$otu_table <- data_tmp_seqsg$otu_table[which(rowSums(data_tmp_seqsg$otu_table)!=1),] # seq singletons
+  data_tmp_samsg$otu_table <- data_tmp_samsg$otu_table[which(rowSums(data_tmp_samsg$otu_table!=0)!=1),] # sample singletons
+  
+  data_tmp_seqsg$tidy_dataset()
+  data_tmp_samsg$tidy_dataset()
+  
+  name_dataset <- paste0(i,c("_samsg","_seqsg"))  
+  
+  
+  data_tmp_seqsg$sample_table%<>%
+    mutate(nb_motus=colSums(data_tmp_seqsg$otu_table>0),
+           nb_reads=colSums(data_tmp_seqsg$otu_table))
+  data_tmp_samsg$sample_table%<>%
+    mutate(nb_motus=colSums(data_tmp_samsg$otu_table>0),
+           nb_reads=colSums(data_tmp_samsg$otu_table))
+  
+  assign(name_dataset[1],data_tmp_samsg)
+  assign(name_dataset[2],data_tmp_seqsg)
+}
+```
+
+
+```{r}
+datasets <- c("meco_mo16s",
+              "meco_mo16s_samsg",
+              "meco_mo16s_seqsg",
+              "meco_moits",
+              "meco_moits_samsg",
+              "meco_moits_seqsg")
+plot_alpha_divz_sgnsg <- NULL
+for(i in datasets){
+  
+  tmp <- get(i)
+  tmp <- clone(tmp)
+  distrib_reads_and_motus <- tmp$sample_table %>%
+    ggplot(aes(x=nb_reads))+
+    geom_histogram(bins=30,color='darkorange',fill='white')+
+    scale_y_continuous(expand = c(0,0))+
+    theme_classic2()+
+    tmp$sample_table %>%
+    ggplot(aes(x=nb_motus))+
+    geom_histogram(bins=30,color='deeppink4',fill='white')+
+    scale_y_continuous(expand = c(0,0))+
+    theme_classic2()
+  
+  cor_reads_motus <- tmp$sample_table %>%
+    ggplot(aes(x=nb_reads, y=nb_motus))+
+    geom_point(color='darkgrey')+
+    scale_y_continuous(expand = expansion(mult = c(0,0.05), add= c(0,0)))+
+    scale_x_continuous(expand = expansion(mult = c(0,0.05), add= c(0,0)) )+
+    theme_classic2()+
+    geom_smooth(method = 'lm',lty=2,color='darkorange')
+  
+  tab16s <- t(otu_table(file2meco::meco2phyloseq(tmp))) # get the community
+  class(tab16s) <- "matrix" # change class
+  curve16s <- rarecurve(tab16s,step=100) # use vegan rarefaction curves
+  names(curve16s) <- rownames(tab16s) # name curves after sample IDs
+  
+  # Coerce data into "long" form.
+  protox <- mapply(FUN = function(x, y) {
+    mydf <- as.data.frame(x)
+    colnames(mydf) <- "value"
+    mydf$samples <- y
+    mydf$subsample <- attr(x, "Subsample")
+    mydf
+  }, x = curve16s, y = as.list(names(curve16s)), SIMPLIFY = FALSE)
+  
+  xy <- do.call(rbind, protox)
+  rownames(xy) <- NULL  # pretty
+  
+  # Plot.
+  rare16s <- ggplot(xy, aes(x = subsample, y = value, group = samples )) +
+    theme_classic2() +
+    scale_color_discrete(guide = "none") +  # turn legend on or off
+    geom_line(color = "aquamarine4")+
+    xlab("nb reads")+
+    ylab("motus count")
+  
+  plot_alpha_divz_sgnsg[[i]] <- distrib_reads_and_motus/(cor_reads_motus+rare16s)+ plot_annotation(title = i) & theme(plot.title = element_text(face='bold'))
+}
+```
+
+```{r}
+ggsave("./articlez/gen1/resultats/final/rarefaction_16s.png",plot_alpha_divz_sgnsg$meco_mo16s_seqsg)
+ggsave("./articlez/gen1/resultats/final/rarefaction_its.png",plot_alpha_divz_sgnsg$meco_moits_seqsg)
+```
+
+
+### Graphz depths/reads
+
+```{r}
+depth_reads_plot <- NULL
+for(i in datasets){
+  
+  data_tmp <- get(i)
+  data_tmp <- clone(data_tmp)
+  
+  df_plot_motu <- data.frame(reads = rowSums(data_tmp$otu_table),
+                             motus = gsub("MOTU_","",rownames(data_tmp$otu_table)))
+  moturead <- ggplot(df_plot_motu,aes(x=log(reads),y=reorder(motus,reads)))+
+    geom_bar(stat = "identity",
+             position = "dodge",
+             width = 1,
+             fill='black')+
+    scale_x_continuous(oob = rescale_none)+
+    theme(axis.text.y = element_blank())
+  
+  
+  
+  df_plot <- data.frame(reads = colSums(data_tmp$otu_table),
+                        samples = gsub("_.*$","",colnames(data_tmp$otu_table)),
+                        trtmt = data_tmp$sample_table$Trtmt)
+  sampreads <- ggplot(df_plot,aes(x=interaction(trtmt, samples),y=reads,fill=trtmt))+
+    geom_bar(stat="identity",position="dodge")+
+    scale_fill_manual(values=mo_col)+
+    theme_classic2()+
+    theme(axis.text.x= element_text(angle=45,
+                                    margin=margin(t = 15)))+
+    labs(fill="Treatments",
+         x="")+
+    scale_y_continuous(expand=c(0,0),breaks = scales::breaks_width(1000))+
+    ggtitle(i)
+  
+  depth_reads_plot[[i]] <- moturead+sampreads
+  
+}
+```
+
+
+```{r}
+ggsave("./articlez/gen1/resultats/final/depth_16s.png",depth_reads_plot$meco_mo16s_seqsg[[2]])
+ggsave("./articlez/gen1/resultats/final/depth_its.png",depth_reads_plot$meco_moits_seqsg[[2]])
+```
+
+
+### rarefaction curves
+
+```{r}
+hill_rare_list <- NULL
+for(i in datasets){
+  data_tmp <- get(i)
+  data_tmp <- clone(data_tmp)
+  pseq_tmp <- file2meco::meco2phyloseq(data_tmp)
+  
+  reads <- t(pseq_tmp@otu_table)
+  class(reads) <- "matrix"
+  motus <-  as.data.frame(cbind(sequence=data_tmp$ori_tax$sequence[rownames(data_tmp$ori_tax)%in%rownames(pseq_tmp@tax_table)],tax_table(pseq_tmp@tax_table)))
+  pcrs<- as.data.frame(pseq_tmp@sam_data)
+  samples <- as.data.frame(pseq_tmp@sam_data)[,c("sample_id","Trtmt")]
+  class(samples) <- "data.frame"
+  samples %<>% mutate(Trtmt = fct_relevel(Trtmt,"P-D","I-D","R-D","P-W","I-W","R-W"))
+  
+  metab <- metabaR::metabarlist_generator(reads=reads,
+                                          motus=motus ,
+                                          pcrs=pcrs,
+                                          samples=samples)
+  
+  metab.raref <-  hill_rarefaction(metab,nsteps = 100)
+  Trtmt <- paste(metab$samples$Trtmt)
+  Trtmt <- setNames(Trtmt,rownames(metab$samples))
+  
+  hill_rare <- gghill_rarefaction(metab.raref, group = Trtmt)+ 
+    scale_fill_manual(values = c(rev(mo_col[1:3]),rev(mo_col[4:6]))) +
+    scale_color_manual(values = c(rev(mo_col[1:3]),rev(mo_col[4:6])))+
+    theme(legend.position="right")
+  hill_rare_list[[i]] <- hill_rare
+}
+```
+
+```{r}
+ggsave("./articlez/gen1/resultats/final/hillrare16s.png",hill_rare_list$meco_mo16s_seqsg)
+ggsave("./articlez/gen1/resultats/final/hillrareits.png",hill_rare_list$meco_moits_seqsg)
+```
+
+
+based on rarefaction curves examination, samples 34, 44 and 22 kinda look problematic and are removed from the datasets.
+
+```{r}
+for(i in datasets){
+  
+  data_tmp <- get(i)
+  data_tmp <- clone(data_tmp)
+  data_tmp_wrmed <- clone(data_tmp)
+  data_tmp_wrmed$sample_table %<>%
+    filter(!grepl("44|34|22",sample_id))
+  
+  data_tmp_wrmed$tidy_dataset()
+  
+  if(!grepl("_sg",i)){
+    data_tmp_wrmed$sample_table%<>%
+      mutate(nb_motus=colSums(data_tmp_wrmed$otu_table>0),
+             nb_reads=colSums(data_tmp_wrmed$otu_table))
+    assign(paste0(i,"_wrmed"),data_tmp_wrmed)
+    
+  }else{
+    if(grepl("seqsg",i)){
+      data_tmp_wrmed$otu_table <- data_tmp_wrmed$otu_table[which(rowSums(data_tmp_wrmed$otu_table)!=1),]
+      data_tmp_wrmed$tidy_dataset()
+      data_tmp_wrmed$sample_table%<>%
+        mutate(nb_motus=colSums(data_tmp_wrmed$otu_table>0),
+               nb_reads=colSums(data_tmp_wrmed$otu_table))
+      assign(paste0(i,"_wrmed"),data_tmp_wrmed)
+    }else{
+      data_tmp_wrmed$otu_table <- data_tmp_wrmed$otu_table[which(rowSums(data_tmp_wrmed$otu_table!=0)!=1),]
+      data_tmp_wrmed$tidy_dataset()
+      data_tmp_wrmed$sample_table%<>%
+        mutate(nb_motus=colSums(data_tmp_wrmed$otu_table>0),
+               nb_reads=colSums(data_tmp_wrmed$otu_table))
+      assign(paste0(i,"_wrmed"),data_tmp_wrmed)
+    }
+  }
+  
+}
+```
+
+
+
+
+# rarefy data
+
+```{r}
+datasets <- c("meco_mo16s",
+              "meco_mo16s_samsg",
+              "meco_mo16s_seqsg",
+              "meco_moits",
+              "meco_moits_samsg",
+              "meco_moits_seqsg",
+              "meco_mo16s_wrmed",
+              "meco_mo16s_samsg_wrmed",
+              "meco_mo16s_seqsg_wrmed",
+              "meco_moits_wrmed",
+              "meco_moits_samsg_wrmed",
+              "meco_moits_seqsg_wrmed")
+
+for(i in datasets){
+  
+  data_tmp <- get(i)
+  data_tmp <- clone(data_tmp)
+  
+  data_tmp$sample_table %<>% filter(nb_reads>2000)
+  data_tmp$rarefy_samples(sample.size = 2000)
+  data_tmp$tidy_dataset()
+
+  
+  
+  if(!grepl("_sg",i)){
+    data_tmp$sample_table%<>%
+      mutate(nb_motus=colSums(data_tmp$otu_table>0),
+             nb_reads=colSums(data_tmp$otu_table))
+    assign(paste0(i,"_raref"),data_tmp)
+    
+  }else{
+    if(grepl("seqsg",i)){
+      data_tmp$otu_table <- data_tmp$otu_table[which(rowSums(data_tmp$otu_table)!=1),]
+      data_tmp$tidy_dataset()
+      data_tmp$sample_table%<>%
+        mutate(nb_motus=colSums(data_tmp$otu_table>0),
+               nb_reads=colSums(data_tmp$otu_table))
+      assign(paste0(i,"_raref"),data_tmp)
+    }else{
+      data_tmp$otu_table <- data_tmp$otu_table[which(rowSums(data_tmp$otu_table!=0)!=1),]
+      data_tmp$tidy_dataset()
+      data_tmp$sample_table%<>%
+        mutate(nb_motus=colSums(data_tmp$otu_table>0),
+               nb_reads=colSums(data_tmp$otu_table))
+      assign(paste0(i,"_raref"),data_tmp)
+    }
+  }
+  
+  
+}
+```
+
+```{r}
+datasets <- c("meco_mo16s",
+              "meco_mo16s_samsg",
+              "meco_mo16s_seqsg",
+              "meco_moits",
+              "meco_moits_samsg",
+              "meco_moits_seqsg",
+              "meco_mo16s_wrmed",
+              "meco_mo16s_samsg_wrmed",
+              "meco_mo16s_seqsg_wrmed",
+              "meco_moits_wrmed",
+              "meco_moits_samsg_wrmed",
+              "meco_moits_seqsg_wrmed",
+              "meco_mo16s_raref",
+              "meco_mo16s_samsg_raref",
+              "meco_mo16s_seqsg_raref",
+              "meco_moits_raref",
+              "meco_moits_samsg_raref",
+              "meco_moits_seqsg_raref",
+              "meco_mo16s_wrmed_raref",
+              "meco_mo16s_samsg_wrmed_raref",
+              "meco_mo16s_seqsg_wrmed_raref",
+              "meco_moits_wrmed_raref",
+              "meco_moits_samsg_wrmed_raref",
+              "meco_moits_seqsg_wrmed_raref")
+```
+
+
+
+
+
+
+### Plot post raref
+
+```{r}
+plot_alpha_divz_sgnsg_postraref <- NULL
+for(i in datasets){
+  
+  tmp <- get(i)
+  tmp <- clone(tmp)
+  distrib_reads_and_motus <- tmp$sample_table %>%
+    ggplot(aes(x=nb_reads))+
+    geom_histogram(bins=30,color='darkorange',fill='white')+
+    scale_y_continuous(expand = c(0,0))+
+    theme_classic2()+
+    tmp$sample_table %>%
+    ggplot(aes(x=nb_motus))+
+    geom_histogram(bins=30,color='deeppink4',fill='white')+
+    scale_y_continuous(expand = c(0,0))+
+    theme_classic2()
+  
+  cor_reads_motus <- tmp$sample_table %>%
+    ggplot(aes(x=nb_reads, y=nb_motus))+
+    geom_point(color='darkgrey')+
+    scale_y_continuous(expand = expansion(mult = c(0,0.05), add= c(0,0)))+
+    scale_x_continuous(expand = expansion(mult = c(0,0.05), add= c(0,0)) )+
+    theme_classic2()+
+    geom_smooth(method = 'lm',lty=2,color='darkorange')
+  
+  tab16s <- t(otu_table(file2meco::meco2phyloseq(tmp))) # get the community
+  class(tab16s) <- "matrix" # change class
+  curve16s <- rarecurve(tab16s,step=100) # use vegan rarefaction curves
+  names(curve16s) <- rownames(tab16s) # name curves after sample IDs
+  
+  # Coerce data into "long" form.
+  protox <- mapply(FUN = function(x, y) {
+    mydf <- as.data.frame(x)
+    colnames(mydf) <- "value"
+    mydf$samples <- y
+    mydf$subsample <- attr(x, "Subsample")
+    mydf
+  }, x = curve16s, y = as.list(names(curve16s)), SIMPLIFY = FALSE)
+  
+  xy <- do.call(rbind, protox)
+  rownames(xy) <- NULL  # pretty
+  
+  # Plot.
+  rare16s <- ggplot(xy, aes(x = subsample, y = value, group = samples )) +
+    theme_classic2() +
+    scale_color_discrete(guide = "none") +  # turn legend on or off
+    geom_line(color = "aquamarine4")+
+    xlab("nb reads")+
+    ylab("motus count")
+  
+  plot_alpha_divz_sgnsg_postraref[[i]] <- distrib_reads_and_motus/(cor_reads_motus+rare16s)+ plot_annotation(title = i) & theme(plot.title = element_text(face='bold'))
+}
+```
+
+
+```{r}
+ggsave("./articlez/gen1/resultats/final/divpostraref16s.png",plot_alpha_divz_sgnsg_postraref$meco_mo16s_seqsg_raref[[1]][[2]]/plot_alpha_divz_sgnsg_postraref$meco_mo16s_seqsg_raref[[2]][[2]],height = 5,width = 5)
+ggsave("./articlez/gen1/resultats/final/divpostrarefits.png",plot_alpha_divz_sgnsg_postraref$meco_moits_seqsg_raref[[1]][[2]]/plot_alpha_divz_sgnsg_postraref$meco_moits_seqsg_raref[[2]][[2]],height = 5,width = 5)
+```
+
+
+## Singletons post raref
+
+### Singletons
+
+Visualize number of singletons
+```{r}
+singleton_seq_plots_list <- NULL
+for(i in c("meco_mo16s","meco_moits")){
+  
+  data_tmp <- get(i)
+  data_tmp <- clone(data_tmp)
+  
+  
+  n_single_asv <- sum(rowSums(data_tmp$otu_table)==1) # number of single read sequences
+  n_non_single_asv <- sum(rowSums(data_tmp$otu_table)>1) # number of non single asvs
+  n_single_reads <- sum(data_tmp$otu_table[which(rowSums(data_tmp$otu_table)==1),]) # number of reads from the data set that correspond to asv singletons (sum of reads on singletons subset)
+  n_non_single_reads <- sum(data_tmp$otu_table[which(rowSums(data_tmp$otu_table)>1),]) # same but for non singletons
+  
+  df_tmp <- data.frame(asv_val=c(n_single_asv,n_non_single_asv),
+                       read_val=c(n_single_reads,n_non_single_reads),
+                       type=c("n_single","n_non_single"))
+  df_tmp %<>% mutate(pct_asvs=asv_val/sum(asv_val), # convert to %
+                     pct_reads=read_val/sum(data_tmp$otu_table))%>%
+    reshape2::melt()%>%
+    filter(grepl("pct",variable))
+  
+  singletons <- ggplot(df_tmp,aes(x = variable,y = value, fill=type))+
+    geom_bar(position="stack",stat = "identity")+
+    theme_classic2()+
+    scale_fill_manual(values = c("lightseagreen","mediumvioletred"))+
+    theme(plot.title = element_text(face='bold'))+
+    ylab("% of singletons")+
+    xlab("ASVs vs Reads")+
+    scale_y_continuous(expand = c(0,0))
+  
+  
+  alpha <- colSums(data_tmp$otu_table!=0) # sample alpha diversity as the number of non null rows (asvs)
+  single_asv <-  colSums(filter(data_tmp$otu_table,rowSums(data_tmp$otu_table)==1)==1) # number of singletons asvs within sample as the number of asvs restricted to this sample (subset rowsums) and with one read (==1)
+  # non_single_asv2 <- colSums(data_tmp$otu_table>1)
+  non_single_asv <- alpha-single_asv # ASVs that might be singletons within the sample but not the dataset 
+  df_tmp <- data.frame(value = c(rbind(single_asv,non_single_asv)),
+                       type=c("n_single","n_non_single"),
+                       sample=rep(1:ncol(data_tmp$otu_table),each=2))%>%
+    group_by(sample)%>%
+    mutate(val_pct= value/sum(value))
+  
+  alpha_plot <- ggplot(df_tmp,aes(x=sample,y=value,fill=type))+
+    geom_bar(stat="identity",position = "stack",width = 1)+
+    theme_classic2()+
+    ggtitle(paste0(i," sequence singletons repartition"))+
+    theme(plot.title = element_text(face='bold'))+
+    scale_y_continuous(expand = c(0,0))+
+    scale_x_continuous(expand = c(0,0))+
+    xlab("samples")+
+    ylab("Richness")+
+    scale_fill_manual(values=c("lightseagreen","mediumvioletred"))
+  
+  alpha_plot_pct <- ggplot(df_tmp,aes(x=sample,y=val_pct,fill=type))+
+    geom_bar(stat="identity",position = "stack",width = 1)+
+    theme_classic2()+
+    theme(plot.title = element_text(face='bold'))+
+    scale_y_continuous(expand = c(0,0))+
+    scale_x_continuous(expand = c(0,0))+
+    xlab("samples")+
+    ylab("Richness")+
+    scale_fill_manual(values=c("lightseagreen","mediumvioletred"))
+  
+  
+  data_tmp_singl <- clone(data_tmp)
+  data_tmp_singl$otu_table %<>% filter(rowSums(.)==1)
+  data_tmp_singl$tidy_dataset()
+  data_tmp_singl$sample_table %<>% mutate(dumb_group = "sample")
+  data_tmp_singl$cal_abund()
+  data_tmp_singl <- trans_abund$new(data_tmp_singl,taxrank = "Genus_conf",ntaxa = 8,groupmean = "dumb_group")
+  
+  plot_data <- data_tmp_singl$data_abund
+  use_taxanames <- c(data_tmp_singl$data_taxanames,"unidentified")
+  plot_data$Taxonomy[!plot_data$Taxonomy %in% use_taxanames] <- "Others"
+  plot_data %<>% 
+    dplyr::group_by(!!!syms(c("Taxonomy","Sample"))) %>% 
+    dplyr::summarise(Abundance = sum(Abundance)) %>% 
+    as.data.frame(stringsAsFactors = FALSE)
+  plot_data$Taxonomy %<>% factor(., levels = c(use_taxanames[-9], "Others", "unidentified"))
+  plot_data$label <- paste0(round(plot_data$Abundance, 1),"%")
+  donut_comp <- ggdonutchart(plot_data,"Abundance",
+                             fill="Taxonomy",
+                             label = "label",
+                             color = "white",
+                             palette = c(colorRampPalette(brewer.pal(8, "Dark2"))(9),"lightgrey"))+
+    theme(legend.position = "right")
+  
+  
+  singleton_plots <- alpha_plot + theme(legend.position = "n") + alpha_plot_pct + singletons + theme(legend.position = "n") + donut_comp  + plot_layout(widths = c(1, 1))
+  singleton_seq_plots_list[[i]] <- singleton_plots
+}
+```
+
+```{r}
+to_save <- list(meco_mo16s_samsg,
+                meco_mo16s_seqsg,
+                meco_moits_samsg,
+                meco_moits_seqsg,
+                meco_mo16s_samsg_wrmed,
+                meco_mo16s_seqsg_wrmed,
+                meco_moits_samsg_wrmed,
+                meco_moits_seqsg_wrmed,
+                meco_mo16s_samsg_raref,
+                meco_mo16s_seqsg_raref,
+                meco_moits_samsg_raref,
+                meco_moits_seqsg_raref,
+                meco_mo16s_samsg_wrmed_raref,
+                meco_mo16s_seqsg_wrmed_raref,
+                meco_moits_samsg_wrmed_raref,
+                meco_moits_seqsg_wrmed_raref)
+save(to_save,file = "./articlez/gen1/data/cleaned_microtable_ff.RData")
+```
+
+
+
+```{r}
+rm(list=ls())
+gc()
+```
+
+
+
+
+
+
+```{r}
+load("./articlez/gen1/data/cleaned_microtable_ff.RData")
+```
+
+
+
+#SOILS
+
+```{r}
+sub_16s_soils %<>% mutate_sample_data(gen = ifelse(grepl("M",sample_id)==T,"mother","seedling"))
+sub_its_soils %<>% mutate_sample_data(gen = ifelse(grepl("M",sample_id)==T,"mother","seedling"))
+
+sub_16s_soils %<>% mutate_sample_data(Trtmt = ifelse(grepl("SP",sample_id)==T,"P",ifelse(grepl("PS[A-Z]",sample_id)==T,"I","R")))
+sub_its_soils %<>% mutate_sample_data(Trtmt = ifelse(grepl("SP",sample_id)==T,"P",ifelse(grepl("PS[A-Z]",sample_id)==T,"I","R")))
+
+sub_16s_soils %<>%filter_sample_data(gen == "mother")
+sub_its_soils %<>%filter_sample_data(gen == "mother")
+
+
+meco_soil16s <- file2meco::phyloseq2meco(sub_16s_soils)
+meco_soilits <- file2meco::phyloseq2meco(sub_its_soils)
+
+
+meco_soil16s$sample_sums() %>% range;sum(meco_soil16s$sample_sums()) # 42* fold difference in range: min reads in a sample, max reads **, total dataset reads
+meco_soilits$taxa_sums() %>% range;sum(meco_soilits$taxa_sums())
+```
+rm chloropast, archaea and mitochondria
+```{r}
+meco_soil16s$filter_pollution(taxa = c("chloroplast","archaea","mitochondria")) # "mitochondria" to be added
+meco_soil16s$tidy_dataset() # modify all tables accordingly
+```
+
+
+```{r}
+meco_soil16s$otu_table <- meco_soil16s$otu_table[which(rowSums(meco_soil16s$otu_table)!=1),]
+meco_soil16s$tidy_dataset()
+meco_soil16s$taxa_sums() %>% range;sum(meco_soil16s$taxa_sums()) # 
+
+meco_soilits$otu_table <- meco_soilits$otu_table[which(rowSums(meco_soilits$otu_table)!=1),]
+meco_soilits$tidy_dataset()
+meco_soilits$taxa_sums() %>% range;sum(meco_soilits$taxa_sums()) # 
+
+
+meco_soil16s$sample_table %<>% mutate(Trtmt=fct_relevel(Trtmt,"P","I","R"))
+meco_soilits$sample_table %<>% mutate(Trtmt=fct_relevel(Trtmt,"P","I","R"))
+```
+
+
+```{r}
+df_plot_motu <- data.frame(reads = rowSums(meco_soil16s$otu_table),
+                           motus = gsub("MOTU_","",rownames(meco_soil16s$otu_table)))
+moturead <- ggplot(df_plot_motu,aes(x=log(reads),y=reorder(motus,reads)))+
+  geom_bar(stat = "identity",
+           position = "dodge",
+           width = 1,
+           fill='black')+
+  scale_x_continuous(oob = rescale_none)+
+  theme(axis.text.y = element_blank())
+
+ggsave("../figz/final/motureads_soil_16s.png",moturead,device = "png")
+```
+
+Plot reads per sample to diagnose if rarefying is needed.
+```{r}
+df_plot <- data.frame(reads = colSums(meco_soil16s$otu_table),
+                   samples = gsub("_.*$","",colnames(meco_soil16s$otu_table)),
+                   trtmt = meco_soil16s$sample_table$Trtmt)
+sampreads <- ggplot(df_plot,aes(x=interaction(trtmt, samples),y=reads,fill=trtmt))+
+  geom_bar(stat="identity",position="dodge")+
+  scale_fill_manual(values=soil_col)+
+  theme_classic2()+
+  theme(axis.text.x= element_text(angle=45,
+                                  margin=margin(t = 15)))+
+  labs(fill="Treatments",
+       x="")+
+  scale_y_continuous(expand=c(0,0),breaks = scales::breaks_width(1000))
+  
+ggsave("../figz/final/sampreads_soil_16s.png",sampreads,device = "png",width=15 ,height=12)
+```
+
+### Rare curve
+```{r}
+soildata <- c("meco_soil16s","meco_soilits")
+hill_rare_list <- NULL
+for(i in soildata){
+  data_tmp <- get(i)
+  data_tmp <- clone(data_tmp)
+  pseq_tmp <- file2meco::meco2phyloseq(data_tmp)
+  
+  reads <- t(pseq_tmp@otu_table)
+  class(reads) <- "matrix"
+  motus <-  as.data.frame(cbind(sequence=data_tmp$ori_tax$sequence[rownames(data_tmp$ori_tax)%in%rownames(pseq_tmp@tax_table)],tax_table(pseq_tmp@tax_table)))
+  pcrs<- as.data.frame(pseq_tmp@sam_data)
+  samples <- as.data.frame(pseq_tmp@sam_data)[,c("sample_id","Trtmt")]
+  class(samples) <- "data.frame"
+  samples %<>% mutate(Trtmt = fct_relevel(Trtmt,"P","I","R"))
+  
+  metab <- metabaR::metabarlist_generator(reads=reads,
+                                          motus=motus ,
+                                          pcrs=pcrs,
+                                          samples=samples)
+  
+  metab.raref <-  hill_rarefaction(metab,nsteps = 100)
+  Trtmt <- paste(metab$samples$Trtmt)
+  Trtmt <- setNames(Trtmt,rownames(metab$samples))
+  
+  hill_rare <- gghill_rarefaction(metab.raref, group = Trtmt)+ 
+    scale_fill_manual(values = soil_col[c(2,1,3)]) +
+    scale_color_manual(values = soil_col[c(2,1,3)])+
+    theme(legend.position="right")
+  hill_rare_list[[i]] <- hill_rare
+}
+```
+
+
+
+
+```{r}
+df_plot_motu <- data.frame(reads = rowSums(meco_soilits$otu_table),
+                           motus = gsub("MOTU_","",rownames(meco_soilits$otu_table)))
+moturead <- ggplot(df_plot_motu,aes(x=log(reads),y=reorder(motus,reads)))+
+  geom_bar(stat = "identity",
+           position = "dodge",
+           width = 1,
+           fill='black')+
+  scale_x_continuous(oob = rescale_none)+
+  theme(axis.text.y = element_blank())
+
+ggsave("../figz/final/motureads_soil_its.png",moturead,device = "png")
+```
+
+```{r}
+df_plot <- data.frame(reads = colSums(meco_soilits$otu_table),
+                   samples = gsub("_.*$","",colnames(meco_soilits$otu_table)),
+                   trtmt = meco_soilits$sample_table$Trtmt)
+sampreads <- ggplot(df_plot,aes(x=interaction(trtmt, samples),y=reads,fill=trtmt))+
+  geom_bar(stat="identity",position="dodge")+
+  scale_fill_manual(values=soil_col)+
+  theme_classic2()+
+  theme(axis.text.x= element_text(angle=45,
+                                  margin=margin(t = 15)))+
+  labs(fill="Treatments",
+       x="")+
+  scale_y_continuous(expand=c(0,0),breaks = scales::breaks_width(1000))
+  
+ggsave("../figz/final/sampreads_soil_its.png",sampreads,device = "png",width=15 ,height=12)
+```
+
+
+```{r}
+asperagillaceae <- subset_taxa(file2meco::meco2phyloseq(meco_soilits), Order=="o__Mycosphaerellales"|Order=="o__Eurotiales")
+asp <- trans_abund$new(dataset = file2meco::phyloseq2meco(asperagillaceae), taxrank = "Genus_conf", ntaxa = 12)
+plot_asp <- asp$plot_bar(others_color = "grey70",facet = "Trtmt", xtext_keep = FALSE, legend_text_italic = FALSE)
+```
+
+```{r}
+t1 <- trans_abund$new(dataset = meco_soilits, taxrank = "Genus",input_taxaname = c('Talaromyces',
+                                                                              'Zasmidium',
+                                                                              'Aspergillus',
+                                                                              'Pseudorhypophila',
+                                                                              'Colletotrichum',
+                                                                              'Fusarium') )
+t1$plot_box(group = "Trtmt", xtext_angle = 30)
+```
+
+```{r}
+meco_soil16s$cal_alphadiv() # compute alphadiv 
+meco_soilits$cal_alphadiv()
+
+alpha_soil_16s <- trans_alpha$new(dataset = meco_soil16s, group = "Trtmt")
+alpha_soil_its <- trans_alpha$new(dataset = meco_soilits, group = "Trtmt")
+
+```
+
+```{r}
+trtmt <- meco_soil16s$sample_table$Trtmt
+sr16s <- hill_taxa(t(meco_soil16s$otu_table), q = 0, MARGIN = 1, base = exp(1))
+bxp_sr16s <- ggplot(data.frame(sr16s,trtmt),aes(x=trtmt,y=sr16s,color=trtmt))+
+  geom_boxplot()+
+  geom_jitter()+
+  scale_color_manual(values=mo_col)+
+  theme_classic2()+
+  ylab("Observed bacterial OTUs richness")+
+  xlab("")+
+  labs(color="Treatment")+
+  theme(legend.key.size = unit(1.7, 'cm'),
+        legend.title = element_text(size=14),
+        legend.text = element_text(size=12))+
+  guides(color=guide_legend(title.hjust=0.5))
+
+
+shan16s <- hill_taxa(t(meco_soil16s$otu_table), q = 1, MARGIN = 1, base = exp(1))
+bxp_shan16s <- ggplot(data.frame(shan16s,trtmt),aes(x=trtmt,y=shan16s,color=trtmt))+
+  geom_boxplot()+
+  geom_jitter()+
+  scale_color_manual(values=mo_col)+
+  theme_classic2()+
+  ylab("Bacterial Shannon entropy index")+
+  xlab("")+
+  theme(legend.position="none")
+
+
+trtmt <- meco_soilits$sample_table$Trtmt
+srits <- hill_taxa(t(meco_soilits$otu_table), q = 0, MARGIN = 1, base = exp(1))
+bxp_srits <- ggplot(data.frame(srits,trtmt),aes(x=trtmt,y=srits,color=trtmt))+
+  geom_boxplot()+
+  geom_jitter()+
+  scale_color_manual(values=mo_col)+
+  theme_classic2()+
+  ylab("Observed fungal OTUs richness")+
+  xlab("")+
+  labs(color="Treatment")+
+  theme(legend.key.size = unit(1.7, 'cm'),
+        legend.title = element_text(size=14),
+        legend.text = element_text(size=12))+
+  guides(color=guide_legend(title.hjust=0.5))
+
+
+shanits <- hill_taxa(t(meco_soilits$otu_table), q = 1, MARGIN = 1, base = exp(1))
+bxp_shanits <- ggplot(data.frame(shanits,trtmt),aes(x=trtmt,y=shanits,color=trtmt))+
+  geom_boxplot()+
+  geom_jitter()+
+  scale_color_manual(values=mo_col)+
+  theme_classic2()+
+  ylab("Fungal Shannon entropy index")+
+  xlab("")+
+  theme(legend.position="none")
+
+
+
+bxpl_alpah_soils <-( bxp_sr16s|bxp_shan16s)/(bxp_srits+ theme(legend.position="none")|bxp_shanits)+ plot_layout(guides="collect")
+```
+
+```{r}
+ggsave("../figz/final/soil_alphaz.png",bxpl_alpah_soils,device="png")
+```
+
+### Relative abundance
+
+```{r}
+# create trans_abund object
+# use 15 Phyla with the highest abundance in the dataset.
+
+col <- c("#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A","#FFFF99","#B15928","grey70")
+
+
+col_change <- c("grey70","#A6CEE3","#050c73","#02a6a8","#53a145","#75963f","#966309","#f08362","#FFFF99","#FDBF6F","#a3ad47","#c089c4","#b06bb5")
+
+t1_16s <- trans_abund$new(dataset = meco_soil16s, taxrank = "Order_conf", ntaxa = 12)
+tset <- t1_16s$plot_bar(others_color = "grey70",facet = "Trtmt", xtext_keep = FALSE, legend_text_italic = FALSE)
+tset+scale_fill_manual(values = col_change)
+
+t1_16s <- trans_abund$new(dataset = meco_soil16s, taxrank = "Class_conf", ntaxa = 12)
+plot_16s_class <- t1_16s$plot_bar(others_color = "grey70",facet = "Trtmt", xtext_keep = FALSE, legend_text_italic = FALSE)
+t1_16s <- trans_abund$new(dataset = meco_soil16s, taxrank = "Order_conf", ntaxa = 12)
+plot_16s_order <- t1_16s$plot_bar(others_color = "grey70",facet = "Trtmt", xtext_keep = FALSE, legend_text_italic = FALSE)+
+  scale_fill_manual(values = col_change)
+t1_16s <- trans_abund$new(dataset = meco_soil16s, taxrank = "Family_conf", ntaxa = 12)
+plot_16s_family <- t1_16s$plot_bar(others_color = "grey70",facet = "Trtmt", xtext_keep = FALSE, legend_text_italic = FALSE)
+t1_16s <- trans_abund$new(dataset = meco_soil16s, taxrank = "Genus_conf", ntaxa = 12)
+plot_16s_genus <- t1_16s$plot_bar(others_color = "grey70",facet = "Trtmt", xtext_keep = FALSE, legend_text_italic = FALSE)
+plot_comb <- (plot_16s_class|plot_16s_order)/(plot_16s_family|plot_16s_genus)
+
+ggsave("../figz/final/soil_relab16s_abfilt.png",plot_comb, device="png", width=15,height = 10)
+```
+
+
+```{r}
+col <- c("#A6CEE3","#1F78B4","#B2DF8A","#33A02C","#FB9A99","#E31A1C","#FDBF6F","#FF7F00","#CAB2D6","#6A3D9A","#FFFF99","#B15928","grey70")
+
+
+col_change <- c("grey70","#FF7F00","#050c73","#02a6a8","#53a145","#75963f","#966309","#f08362","#A6CEE3","#FDBF6F","#a3ad47","#B15928","#33A02C")
+
+
+t1_its <- trans_abund$new(dataset = meco_soilits, taxrank = "Class_conf", ntaxa = 12)
+plot_its_class <- t1_its$plot_bar(others_color = "grey70",facet = "Trtmt", xtext_keep = FALSE, legend_text_italic = FALSE)
+t1_its <- trans_abund$new(dataset = meco_soilits, taxrank = "Order_conf", ntaxa = 12)
+plot_its_order <- t1_its$plot_bar(others_color = "grey70",facet = "Trtmt", xtext_keep = FALSE, legend_text_italic = FALSE)+
+  scale_fill_manual(values = col_change)
+t1_its <- trans_abund$new(dataset = meco_soilits, taxrank = "Family_conf", ntaxa = 12)
+plot_its_family <- t1_its$plot_bar(others_color = "grey70",facet = "Trtmt", xtext_keep = FALSE, legend_text_italic = FALSE)
+t1_its <- trans_abund$new(dataset = meco_soilits, taxrank = "Genus_conf", ntaxa = 12)
+plot_its_genus <- t1_its$plot_bar(others_color = "grey70",facet = "Trtmt", xtext_keep = FALSE, legend_text_italic = FALSE)
+plot_comb <- (plot_its_class|plot_its_order)/(plot_its_family|plot_its_genus)
+
+ggsave("../figz/final/soil_relabits_abfilt.png",plot_comb, device="png", width=15,height = 10)
+```
+
+
+
+
+
+### Alphadiv
+
+
+#### Classic
+
+compute diversity
+```{r}
+filtered_16s$tidy_dataset() # clean data set
+filtered_its$tidy_dataset()
+filtered_16s$cal_alphadiv() # compute alphadiv 
+filtered_its$cal_alphadiv()
+
+alpha_16s <- trans_alpha$new(dataset = filtered_16s, group = "Trtmt")
+alpha_its <- trans_alpha$new(dataset = filtered_its, group = "Trtmt")
+
+alpha_16s$data_stat[, ]
+alpha_its$data_stat[, ]
+```
+
+significance
+```{r}
+alpha_16s$cal_diff(method = "anova")
+alpha_its$cal_diff(method = "KW")
+# return alpha_16s$res_diff
+alpha_16s$res_diff[1:5, ]
+alpha_its$res_diff[1:5, ]
+```
+
+boxplot
+```{r}
+alpha_16s$cal_diff(method = "KW")
+obs16s <- alpha_16s$plot_alpha(measure = "Observed",add_sig = F,color_values = mo_col) 
+chao16s <- alpha_16s$plot_alpha(measure = "Chao1",add_sig = F,color_values = mo_col)
+shan16s <- alpha_16s$plot_alpha(measure = "Shannon",add_sig = F,color_values = mo_col)
+sim16s <- alpha_16s$plot_alpha(measure = "Simpson",add_sig = F,color_values = mo_col)
+
+alphas16s <- (obs16s|sim16s)/(chao16s|shan16s)
+
+ggsave("../figz/final/alpha16s.png",alphas16s,device="png",width = 10, height = 10)
+
+
+alpha_its$cal_diff(method = "KW")
+obsits <- alpha_its$plot_alpha(measure = "Observed",add_sig = F,color_values = mo_col)
+chaoits <- alpha_its$plot_alpha(measure = "Chao1",add_sig = F,color_values = mo_col)
+shanits <- alpha_its$plot_alpha(measure = "Shannon",add_sig = F,color_values = mo_col)
+simits <- alpha_its$plot_alpha(measure = "Simpson",add_sig = F,color_values = mo_col)
+
+alphasits <- (obsits|simits)/(chaoits|shanits)
+
+ggsave("../figz/final/alphaits.png",alphasits,device="png",width = 10, height = 10)
+```
+
+
+#### Hill numbers
+
+16s
+```{r}
+trtmt <- filtered_16s$sample_table$Trtmt
+sr16s <- hill_taxa(t(filtered_16s$otu_table), q = 0, MARGIN = 1, base = exp(1))
+bxp_sr16s <- ggplot(data.frame(sr16s,trtmt),aes(x=trtmt,y=sr16s,color=trtmt))+
+  geom_boxplot()+
+  geom_jitter()+
+  scale_color_manual(values=mo_col)+
+  theme_classic2()+
+  ylab("Observed bacterial OTUs richness")+
+  xlab("")+
+  labs(color="Treatment")+
+  theme(legend.key.size = unit(1.7, 'cm'),
+        legend.title = element_text(size=14),
+        legend.text = element_text(size=12))+
+  guides(color=guide_legend(ncol=2,
+                           title.hjust=0.5))
+
+bxp_sr16s <- cld_bxplot_wilcox(data = data.frame(sr16s,trtmt),
+                              x = data.frame(sr16s,trtmt)$trtmt,
+                              y =  data.frame(sr16s,trtmt)$sr16s,
+                              plot = bxp_sr16s,
+                              nudge = .05)
+
+shan16s <- hill_taxa(t(filtered_16s$otu_table), q = 1, MARGIN = 1, base = exp(1))
+bxp_shan16s <- ggplot(data.frame(shan16s,trtmt),aes(x=trtmt,y=shan16s,color=trtmt))+
+  geom_boxplot()+
+  geom_jitter()+
+  scale_color_manual(values=mo_col)+
+  theme_classic2()+
+  ylab("Bacterial Shannon entropy index")+
+  xlab("")+
+  theme(legend.position="none")
+
+bxp_shan16s <- cld_bxplot_wilcox(data = data.frame(shan16s,trtmt),
+                              x = data.frame(shan16s,trtmt)$trtmt,
+                              y =  data.frame(shan16s,trtmt)$shan16s,
+                              plot = bxp_shan16s,
+                              nudge = .05)
+
+invsimp16s <- hill_taxa(t(filtered_16s$otu_table), q = 2, MARGIN = 1, base = exp(1))
+bxp_invsimp16s <- ggplot(data.frame(invsimp16s,trtmt),aes(x=trtmt,y=invsimp16s,color=trtmt))+
+  geom_boxplot()+
+  geom_jitter()+
+  scale_color_manual(values=mo_col)+
+  theme_classic2()+
+  ylab("Bacterial Gini-Simpson index")+
+  xlab("")+
+  labs(color="Treatment")+
+  theme(legend.position="none")
+
+bxp_invsimp16s <- cld_bxplot_wilcox(data = data.frame(invsimp16s,trtmt),
+                              x = data.frame(invsimp16s,trtmt)$trtmt,
+                              y =  data.frame(invsimp16s,trtmt)$invsimp16s,
+                              plot = bxp_invsimp16s,
+                              nudge = .05)
+
+bxplt_alpha_16s <- (bxp_sr16s+theme(legend.position="none")|bxp_shan16s)/(bxp_invsimp16s|EcophyCofog::xtract_legend(bxp_sr16s))
+```
+
+```{r}
+ggsave("../figz/final/hill_alpha16s.png",bxplt_alpha_16s,device="png",width = 8, height = 8)
+```
+
+its
+```{r}
+trtmt <- filtered_its$sample_table$Trtmt
+srits <- hill_taxa(t(filtered_its$otu_table), q = 0, MARGIN = 1, base = exp(1))
+bxp_srits <- ggplot(data.frame(srits,trtmt),aes(x=trtmt,y=srits,color=trtmt))+
+  geom_boxplot()+
+  geom_jitter()+
+  scale_color_manual(values=mo_col)+
+  theme_classic2()+
+  ylab("Observed fungal OTUs richness")+
+  xlab("")+
+  labs(color="Treatment")+
+  theme(legend.key.size = unit(1.7, 'cm'),
+        legend.title = element_text(size=14),
+        legend.text = element_text(size=12))+
+  guides(color=guide_legend(ncol=2,
+                           title.hjust=0.5))
+  
+bxp_srits <- cld_bxplot_wilcox(data = data.frame(srits,trtmt),
+                              x = data.frame(srits,trtmt)$trtmt,
+                              y =  data.frame(srits,trtmt)$srits,
+                              plot = bxp_srits,
+                              nudge = .05)
+
+shanits <- hill_taxa(t(filtered_its$otu_table), q = 1, MARGIN = 1, base = exp(1))
+bxp_shanits <- ggplot(data.frame(shanits,trtmt),aes(x=trtmt,y=shanits,color=trtmt))+
+  geom_boxplot()+
+  geom_jitter()+
+  scale_color_manual(values=mo_col)+
+  theme_classic2()+
+  ylab("Fungal Shannon entropy")+
+  xlab("")+
+  theme(legend.position="none")
+
+bxp_shanits <- cld_bxplot_wilcox(data = data.frame(shanits,trtmt),
+                              x = data.frame(shanits,trtmt)$trtmt,
+                              y =  data.frame(shanits,trtmt)$shanits,
+                              plot = bxp_shanits,
+                              nudge = .05)
+
+invsimpits <- hill_taxa(t(filtered_its$otu_table), q = 2, MARGIN = 1, base = exp(1))
+bxp_invsimpits <- ggplot(data.frame(invsimpits,trtmt),aes(x=trtmt,y=invsimpits,color=trtmt))+
+  geom_boxplot()+
+  geom_jitter()+
+  scale_color_manual(values=mo_col)+
+  theme_classic2()+
+  ylab("Fungal Gini-Simpson index")+
+  xlab("")+
+  labs(color="Treatment")+
+  theme(legend.position="none")
+
+bxp_invsimpits <- cld_bxplot_wilcox(data = data.frame(invsimpits,trtmt),
+                              x = data.frame(invsimpits,trtmt)$trtmt,
+                              y =  data.frame(invsimpits,trtmt)$invsimpits,
+                              plot = bxp_invsimpits,
+                              nudge = .05)
+
+bxplt_alpha_its <- (bxp_srits+theme(legend.position="none")|bxp_shanits)/(bxp_invsimpits|EcophyCofog::xtract_legend(bxp_srits))
+```
+
+```{r}
+ggsave("../figz/final/hill_alphaits.png",bxplt_alpha_its,device="png",width = 8, height = 8)
+```
+
+### Sankey plots
+
+```{r}
+# devtools::install_github('davidsjoberg/ggsankey')
+library(ggsankey)
+```
+
+
+```{r}
+d <- filtered_16s$tax_table[,2:4]
+tab <- filtered_16s$otu_table 
+
+
+tax.lvl <- "Order_conf"
+order_tot <-agg.table.taxo(tab = tab, # aggregate my data at the targeted tax level
+                           tax.lvl = tax.lvl,
+                           tax.table = filtered_16s$tax_table) %>%
+  apply(1,sum) %>% # sum the number of reads
+  sort %>% # sort in ascending order
+  identity
+tax.lvl <- "Class_conf"
+class_tot <-agg.table.taxo(tab = tab, # aggregate my data at the targeted tax level
+                           tax.lvl = tax.lvl,
+                           tax.table = filtered_16s$tax_table) %>%
+  apply(1,sum) %>% # sum the number of reads
+  sort %>% # sort in ascending order
+  identity
+tax.lvl <- "Phylum_conf"
+phylum_tot <-agg.table.taxo(tab = tab, # aggregate my data at the targeted tax level
+                           tax.lvl = tax.lvl,
+                           tax.table = filtered_16s$tax_table) %>%
+  apply(1,sum) %>% # sum the number of reads
+  sort %>% # sort in ascending order
+  identity
+top10_order <- names(order_tot[(length(order_tot)-10):length(order_tot)])
+top10_order <- top10_order[which(top10_order!="o__")]
+top10_class <- names(class_tot[(length(class_tot)-10):length(class_tot)])
+top10_class <- top10_class[which(top10_class!="c__")]
+top10_phylum <- names(phylum_tot[(length(phylum_tot)-10):length(phylum_tot)])
+top10_phylum <- top10_phylum[which(top10_phylum!="p__")]
+
+d <- d %>% mutate(Phylum_conf=ifelse(Phylum_conf%notin%c("p__",top10_phylum),"p__others",Phylum_conf),
+                 Class_conf=ifelse(Class_conf%notin%c("c__",top10_class),"c__others",Class_conf),
+                 Order_conf=ifelse(Order_conf%notin%c("o__",top10_order),"o__others",Order_conf))
+d <- d %>%  mutate(Phylum_conf=ifelse(Phylum_conf=="p__","p__unknown",Phylum_conf),
+                 Class_conf=ifelse(Class_conf=="c__","c__unknown",Class_conf),
+                 Order_conf=ifelse(Order_conf=="o__","o__unknown",Order_conf))
+
+d$reads <- filtered_16s$taxa_sums()
+
+df <- d %>%
+  make_long(1:3)
+
+TotalCount = nrow(d)
+# Step 2
+dagg <- df%>%
+  dplyr::group_by(node)%>%
+  tally()
+
+dagg <- dagg%>%
+  dplyr::group_by(node)%>%
+  dplyr::mutate(pct = n/TotalCount)%>%
+  dplyr::mutate(tax_lvl=ifelse(grepl("c__",node),"class",
+                               ifelse(grepl("o__",node),"order","phylum")))
+
+
+# Step 3
+df2_16s <- merge(df, dagg, by.x = 'node', by.y = 'node', all.x = TRUE)
+
+pl <- ggplot(df2_16s, aes(x = x, 
+                      next_x = next_x, 
+                      node = node, 
+                      next_node = next_node, 
+                      fill = factor(node),
+                      label = paste0(node," n=", n, ' (',  round(pct* 100,1), '%)' ))
+)
+ 
+pl <- pl +geom_sankey(flow.alpha = 0.5,  color = "gray40", show.legend = TRUE)
+pl <- pl +geom_sankey_label(size = 3, color = "black", fill= "white", hjust = -0.1)
+
+pl <- pl +  theme_bw()
+pl <- pl + theme(legend.position = "none")
+pl <- pl +  theme(axis.title = element_blank()
+                  , axis.text.y = element_blank()
+                  , axis.ticks = element_blank()  
+                  , panel.grid = element_blank())
+
+pl <- pl + labs(title = "Sankey diagram for 16s")
+pl <- pl + labs(fill = 'Nodes')
+
+pl <- pl + scale_fill_viridis_d(option = "inferno")
+
+ggsave("../figz/final/sankey_16s.png",device="png",pl,width=10,height=15)
+
+# Table recap
+
+phylum <- filter(dagg,tax_lvl=="phylum")
+phylum %<>% mutate(node=gsub("p__","",node),
+                   abun = paste0(n," (",round(pct*100, digits=2),"%)"))%>%
+  select(-c(2:4))
+
+class <- filter(dagg,tax_lvl=="class")
+class %<>% mutate(node=gsub("c__","",node),
+                   abun = paste0(n," (",round(pct*100, digits=2),"%)"))%>%
+  select(-c(2:4))
+
+order <- filter(dagg,tax_lvl=="order")
+order %<>% mutate(node=gsub("o__","",node),
+                   abun = paste0(n," (",round(pct*100, digits=2),"%)"))%>%
+  select(-c(2:4))
+
+smry_tab <- cbind(phylum,class,order)
+smry_tab %<>% 
+  add_row(.after = 10)%>%
+  flextable()%>%
+  set_header_labels(node...1="Name",abun...2="Count",node...3="Name",abun...4="Count",node...5="Name",abun...6="Count")%>%
+  add_header_row(top = TRUE, values = c("Phylum", "Class","Order"), colwidths = c(2,2,2))%>%
+  align(align = "center", part = "all") %>%
+  autofit()%>%
+  bold(part='header')
+
+
+save_as_docx(smry_tab,path="../resultats/taxa_smry_16s.docx")
+```
+
+```{r}
+d <- filtered_its$tax_table[,2:4]
+tab <- filtered_its$otu_table 
+
+
+tax.lvl <- "Order_conf"
+order_tot <-agg.table.taxo(tab = tab, # aggregate my data at the targeted tax level
+                           tax.lvl = tax.lvl,
+                           tax.table = filtered_its$tax_table) %>%
+  apply(1,sum) %>% # sum the number of reads
+  sort %>% # sort in ascending order
+  identity
+tax.lvl <- "Class_conf"
+class_tot <-agg.table.taxo(tab = tab, # aggregate my data at the targeted tax level
+                           tax.lvl = tax.lvl,
+                           tax.table = filtered_its$tax_table) %>%
+  apply(1,sum) %>% # sum the number of reads
+  sort %>% # sort in ascending order
+  identity
+tax.lvl <- "Phylum_conf"
+phylum_tot <-agg.table.taxo(tab = tab, # aggregate my data at the targeted tax level
+                           tax.lvl = tax.lvl,
+                           tax.table = filtered_its$tax_table) %>%
+  apply(1,sum) %>% # sum the number of reads
+  sort %>% # sort in ascending order
+  identity
+top10_order <- names(order_tot[(length(order_tot)-10):length(order_tot)])
+top10_order <- top10_order[which(top10_order!="o__")]
+top10_class <- names(class_tot[(length(class_tot)-10):length(class_tot)])
+top10_class <- top10_class[which(top10_class!="c__")]
+top10_phylum <- names(phylum_tot[(length(phylum_tot)-10):length(phylum_tot)])
+top10_phylum <- top10_phylum[which(top10_phylum!="p__")]
+
+d <- d %>%mutate(Phylum_conf=ifelse(Phylum_conf%notin%c("p__",top10_phylum),"p__others",Phylum_conf),
+                 Class_conf=ifelse(Class_conf%notin%c("c__",top10_class),"c__others",Class_conf),
+                 Order_conf=ifelse(Order_conf%notin%c("o__",top10_order),"o__others",Order_conf))
+d <- d %>%  mutate(Phylum_conf=ifelse(Phylum_conf=="p__","p__unknown",Phylum_conf),
+                 Class_conf=ifelse(Class_conf=="c__","c__unknown",Class_conf),
+                 Order_conf=ifelse(Order_conf=="o__","o__unknown",Order_conf))
+
+d$reads <- filtered_its$taxa_sums()
+
+df <- d %>%
+  make_long(1:3)
+
+TotalCount = nrow(d)
+# Step 2
+dagg <- df%>%
+  dplyr::group_by(node)%>%
+  tally()
+
+dagg <- dagg%>%
+  dplyr::group_by(node)%>%
+  dplyr::mutate(pct = n/TotalCount)%>%
+  dplyr::mutate(tax_lvl=ifelse(grepl("c__",node),"class",
+                               ifelse(grepl("o__",node),"order","phylum")))
+
+
+# Step 3
+df2_its <- merge(df, dagg, by.x = 'node', by.y = 'node', all.x = TRUE)
+
+pl <- ggplot(df2_its, aes(x = x, 
+                      next_x = next_x, 
+                      node = node, 
+                      next_node = next_node, 
+                      fill = factor(node),
+                      label = paste0(node," n=", n, ' (',  round(pct* 100,1), '%)' ))
+)
+ 
+pl <- pl +geom_sankey(flow.alpha = 0.5,  color = "gray40", show.legend = TRUE)
+pl <- pl +geom_sankey_label(size = 3, color = "black", fill= "white", hjust = -0.1)
+
+pl <- pl +  theme_bw()
+pl <- pl + theme(legend.position = "none")
+pl <- pl +  theme(axis.title = element_blank()
+                  , axis.text.y = element_blank()
+                  , axis.ticks = element_blank()  
+                  , panel.grid = element_blank())
+
+pl <- pl + labs(title = "Sankey diagram for its")
+pl <- pl + labs(fill = 'Nodes')
+
+pl <- pl + scale_fill_viridis_d(option = "inferno")
+
+ggsave("../figz/final/sankey_its.png",device="png",pl,width=10,height=15)
+
+# Table recap
+
+phylum <- filter(dagg,tax_lvl=="phylum")
+phylum %<>% mutate(node=gsub("p__","",node),
+                   abun = paste0(n," (",round(pct*100, digits=2),"%)"))%>%
+  select(-c(2:4))%>%
+  ungroup()%>%
+  add_row(.after = 9)%>%
+  add_row(.after = 9)
+
+class <- filter(dagg,tax_lvl=="class")
+class %<>% mutate(node=gsub("c__","",node),
+                   abun = paste0(n," (",round(pct*100, digits=2),"%)"))%>%
+  select(-c(2:4))
+
+order <- filter(dagg,tax_lvl=="order")
+order %<>% mutate(node=gsub("o__","",node),
+                   abun = paste0(n," (",round(pct*100, digits=2),"%)"))%>%
+  select(-c(2:4))
+
+smry_tab <- cbind(phylum,class,order)
+smry_tab %<>% 
+  add_row(.after = 10)%>%
+  flextable()%>%
+  set_header_labels(node...1="Name",abun...2="Count",node...3="Name",abun...4="Count",node...5="Name",abun...6="Count")%>%
+  add_header_row(top = TRUE, values = c("Phylum", "Class","Order"), colwidths = c(2,2,2))%>%
+  align(align = "center", part = "all") %>%
+  autofit()%>%
+  bold(part='header')
+
+
+save_as_docx(smry_tab,path="../resultats/taxa_smry_its.docx")
+```
+
+# NIMP
+
+non rm sinlgetons coverage
+
+```{r}
+d16s <- file2meco::meco2phyloseq(filtered_16s)
+
+reads <- t(d16s@otu_table)
+class(reads) <- "matrix"
+motus <-  as.data.frame(cbind(sequence=filtered_16s$ori_tax$sequence[rownames(filtered_16s$ori_tax)%in%rownames(d16s@tax_table)],tax_table(d16s@tax_table)))
+pcrs<- as.data.frame(d16s@sam_data)
+samples <- as.data.frame(d16s@sam_data)[,c("sample_id","Trtmt")]
+class(samples) <- "data.frame"
+samples %<>% mutate(Trtmt = fct_relevel(Trtmt,"DSP","DPS","DP","WSP","WPS","WP"))
+metab<- metabaR::metabarlist_generator(reads=reads,
+                                       motus=motus ,
+                                       pcrs=pcrs,
+                                       samples=samples)
+check_metabarlist(metab)
+
+
+metab16s.raref <-  hill_rarefaction(metab)
+Trtmt <- paste(metab$samples$Trtmt)
+Trtmt <- setNames(Trtmt,rownames(metab$samples))
+
+hill_16s_rare <- gghill_rarefaction(metab16s.raref, group = Trtmt)+ 
+  scale_fill_manual(values = c(rev(mo_col[1:3]),rev(mo_col[4:6]))) +
+  scale_color_manual(values = c(rev(mo_col[1:3]),rev(mo_col[4:6])))+
+  theme(legend.position="right")
+```
+
+```{r}
+ggsave("../figz/final/hill_rare16s.png",hill_16s_rare,device = "png", height = 5, width = 9)
+```
+
+
+```{r}
+dits <- file2meco::meco2phyloseq(filtered_its)
+
+reads <- t(dits@otu_table)
+class(reads) <- "matrix"
+motus <-  as.data.frame(cbind(sequence=filtered_its$ori_tax$sequence[rownames(filtered_its$ori_tax)%in%rownames(dits@tax_table)],tax_table(dits@tax_table)))
+pcrs<- as.data.frame(dits@sam_data)
+samples <- as.data.frame(dits@sam_data)[,c("sample_id","Trtmt")]
+class(samples) <- "data.frame"
+samples %<>% mutate(Trtmt = fct_relevel(Trtmt,"DSP","DPS","DP","WSP","WPS","WP"))
+metab<- metabaR::metabarlist_generator(reads=reads,
+                                       motus=motus ,
+                                       pcrs=pcrs,
+                                       samples=samples)
+check_metabarlist(metab)
+metabits.raref <-  hill_rarefaction(metab)
+Trtmt <- paste(metab$samples$Trtmt)
+Trtmt <- setNames(Trtmt,rownames(metab$samples))
+
+hill_its_rare <- gghill_rarefaction(metabits.raref, group = Trtmt)+ 
+  scale_fill_manual(values = c(rev(mo_col[1:3]),rev(mo_col[4:6]))) +
+  scale_color_manual(values = c(rev(mo_col[1:3]),rev(mo_col[4:6])))+
+  theme(legend.position="right")
+```
+
+```{r}
+ggsave("../figz/final/hill_rareits.png",hill_its_rare,device = "png", height = 5, width = 9)
+```
+
+
+
+# tracking
+
+```{r}
+tmp16s <-  read.csv("../data/mother_16s2_seq_tracking.csv",sep = "\t")
+
+
+tmp16s[8,]<- c("metabaR",20308,11982974)
+tmp16s[9,]<- c("split datasets",3005,1588457)
+tmp16s[10,]<-c("cleaning",nrow(filtered_16s$otu_table),sum(filtered_16s$taxa_sums()))
+
+
+
+tmp16s %<>% mutate (total_sequence=as.numeric(total_sequence),
+                 reads=as.numeric(reads)) %>%
+  mutate(seq_pct = (total_sequence/total_sequence[1])*100,
+         reads_pct = (reads/reads[1])*100)
+
+
+tmpits <-  read.csv("../data/mother_ITS2_seq_tracking.csv",sep = "\t")
+
+
+tmpits[8,]<- c("metabaR",13484,10603313)
+tmpits[9,]<- c("split datasets",4205,2864622)
+tmpits[10,]<-c("cleaning",nrow(filtered_its$otu_table),sum(filtered_its$taxa_sums()))
+
+
+
+tmpits %<>% mutate (total_sequence=as.numeric(total_sequence),
+                 reads=as.numeric(reads)) %>%
+  mutate(seq_pct = (total_sequence/total_sequence[1])*100,
+         reads_pct = (reads/reads[1])*100)
+
+```
+
+
+```{r}
+colnames(tmp16s) <- c("Step","Number of sequences", "Number of reads", "% sequences", "% reads")
+tmp16s%<>%
+  mutate(across(.cols=4:5,.fns = round,digits=3))%>%
+  flextable()%>%
+  bold(part = "header")%>%
+  bold(j=1)%>%
+  set_caption( "Bioinformatic pipeline summary for 16s")
+save_as_docx(tmp16s,path="../resultats/bioinf_smry_16s.docx")
+
+colnames(tmpits) <- c("Step","Number of sequences", "Number of reads", "% sequences", "% reads")
+tmpits%<>%
+  mutate(across(.cols=4:5,.fns = round,digits=3))%>%
+  flextable()%>%
+  bold(part = "header")%>%
+  bold(j=1)%>%
+  set_caption( "Bioinformatic pipeline summary for its")
+save_as_docx(tmpits,path="../resultats/bioinf_smry_its.docx")
+```
+

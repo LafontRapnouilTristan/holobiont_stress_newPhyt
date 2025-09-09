@@ -1,0 +1,164 @@
+#I-Load
+
+
+
+## data
+
+### Soil Chi
+
+```{r}
+soil_chi <- read.csv2("./data/chemistry/Chimie_sols.csv") #load
+colnames(soil_chi) <- c("ID","Mass","N_pct","C_pct","N_mg","C_mg","ConN","P_mgkg","pH_h2o") #rename
+soil_chi$trmt <- c(rep("P",3),rep("I",3),rep("R",3)) #set treatments label
+soil_chi%<>% mutate(across(2:9, as.numeric)) # transform to numeric
+soil_chi %<>% mutate(trmt = fct_relevel(trmt,"P","I","R")) # set factor levels order (poor to rich)
+```
+
+### Microbiota
+
+Read microbiota data.
+```{r}
+micro_16s <- readRDS("./data/micro_data_16s.rds")
+```
+
+
+# same for the "datasets" variable that will be use to loop on
+datasets <- c("meco_mo16s_samsg",
+              "meco_mo16s_seqsg",
+              "meco_moits_samsg",
+              "meco_moits_seqsg",
+              "meco_mo16s_samsg_wrmed",
+              "meco_mo16s_seqsg_wrmed",
+              "meco_moits_samsg_wrmed",
+              "meco_moits_seqsg_wrmed",
+              "meco_mo16s_samsg_raref",
+              "meco_mo16s_seqsg_raref",
+              "meco_moits_samsg_raref",
+              "meco_moits_seqsg_raref",
+              "meco_mo16s_samsg_wrmed_raref",
+              "meco_mo16s_seqsg_wrmed_raref",
+              "meco_moits_samsg_wrmed_raref",
+              "meco_moits_seqsg_wrmed_raref")
+datasets <- datasets[c(10,12)]
+```
+
+### Leaf traits
+
+```{r import_data, echo=FALSE,warning=FALSE}
+data_leaf <- read.csv("./articlez/gen1/data/data_art1.csv") #load
+data_leaf$Trtmt <- as.factor(data_leaf$Trtmt) # treatment as factor
+levels(data_leaf$Trtmt) <- c("R-D","I-D","P-D","R-W","I-W","P-W") # change treatment code
+data_leaf %<>% mutate(Trtmt = fct_relevel(Trtmt,"P-D","I-D","R-D","P-W","I-W","R-W")) # change level order to go from harsh to lenient env: DRY > poor/int/rich -> Wet > poor/int/rich
+
+mo_col <- c("P-D"="#FFCC99","I-D"="#993300","R-D"="#330000","P-W"="#5697f5","I-W"="#1d61c2","R-W"="#052d66") # set treatments colors
+var_cat_col <- c("biomass"="burlywood3","nutrient"="darkcyan","photosynthesis"="darkolivegreen4","structural"="chocolate3","water"="darkslateblue","reproduction"="yellow3") # set variable categories colors
+```
+
+Variables:
+-   *FM*, *DM* and *TM* : *Fresh*, *Dry* and *Turgid* mass respectively (g)
+-   *mu_thick* : leaf thickness (cm)
+-   *LDMC* : Leaf dry mass content (g.g\^-1)
+-   *RWC* : Relative Water Content (%)
+-   *WHC* : Water Holding Capacity (gH20.m\^-2)
+-   *Nb_leaves* : Number of Leaves
+-   *Pl_H* : Plant height (cm)
+-   *LL_H* : Youngest mature leaf length (cm)
+-   *LL_W* : Youngest mature leaf width (cm)
+-   *chloro* : Leaf chlorophyll content (µg.cm\^-2)
+-   *FvFm* : PSII yield
+-   *ETRmax* : maximal electron transfert rate (µmol photon.m^-2.s^-1)
+-   *Water_pot* : water potential (MPa?)
+-   *C.N_leaf* : Leaf C/N ratio
+-   *SS_leaf* : Leaf soluble sugars (µg.mg\^-1)
+-   *Starch_leaf* : Leaf starch (µg.mg\^-1)
+-   *mean_trich_diam_inf* : abaxial face trichome diameter (mm)
+-   *mean_trich_diam_sup* : adaxial face trichome diameter (mm)
+-   *inf_trich_dens* : abaxial face trichome density (nb.mm\^-2)
+-   *sup_trich_dens* : adaxial face trichome density (nb.mm\^-2)
+-   *sto_dens* : stomatal density (nb.mm\^-2), only abaxial face, hypostomatous species
+-   *LMA* : Leaf Mass Area (g.m\^-2)
+-   *C-*, *N-* and *P-mg* : Carbon, Nitrogen and Phosphorous content (mg.mg\^-1)
+
+```{r}
+trait_list_glob <- c("Nb_leaves", # list of used traits
+                     "Pl_H",
+                     "LL_H",
+                     "LL_W",
+                     "LMA",
+                     "LDMC",
+                     "mu_thick",
+                     "sto_dens",
+                     "chloro",
+                     "FvFm",
+                     "ETRmax",
+                     "Water_pot",
+                     "RWC",
+                     "C.N_leaf",
+                     "SS_leaf",
+                     # "Starch_leaf",  #Remove starch 'cause detection limit
+                     "Cmg",
+                     "Nmg",
+                     "Pmg",
+                     "Nb_Fr")
+Nbcol <- match(trait_list_glob,colnames(data_leaf)) # get corresponding column indices
+
+trait_df_name <- data.frame(rawnames=trait_list_glob,cleannames=c('Number of leaves','Plant height','Leaf length','Leaf width', 'LMA', 'LDMC', 'Thickness','Stomata','Chlorophyll','Fv/Fm','ETRmax','Water potential','RWC','C/N','Soluble sugar','Carbon','Nitrogen','Phosphorous',"Number of Flowers")) # create clean names used for plots
+
+trait_df_name$unit <- c(bquote(""), # write units used for plots
+                        bquote("(cm)"),
+                        bquote("(cm)"),
+                        bquote("(cm)"),
+                        bquote("(g.m"^-2~")"),
+                        bquote("(g.g"^1~")"),
+                        bquote("(mm)"),
+                        bquote("(mm"^2~")"),
+                        bquote("(mg.g"^-1~")"),
+                        bquote(""),
+                        bquote("(µmol.m"^-2~".s"^-1~")"),
+                        bquote("(MPa)"),
+                        bquote("(%)"),
+                        bquote(""),
+                        bquote("(µg.mg"^-1~")"),
+                        bquote("(mg.g"^-1~")"),
+                        bquote("(mg.g"^-1~")"),
+                        bquote("(mg.g"^-1~")"),
+                        bquote(""))
+
+var_cat <- c("biomass", #set variable categories
+             "biomass",
+             "biomass",
+             "biomass",
+             "structural",
+             "structural",
+             "structural",
+             "structural",
+             "photosynthesis",
+             "photosynthesis",
+             "photosynthesis",
+             "water",
+             "water",
+             "nutrient",
+             "nutrient",
+             "nutrient",
+             "nutrient",
+             'nutrient',
+             'reproduction')
+
+trait_df_name %<>% mutate(var_cat=as.factor(var_cat)) # as factor
+
+df_col_var <- data.frame(var_cat=c("biomass", # also store colors
+                                   "nutrient",
+                                   "photosynthesis",
+                                   "structural",
+                                   "water",
+                                   "reproduction",
+                                   "otus"),
+                         colorz=c("burlywood3",
+                                  "darkcyan",
+                                  "darkolivegreen4",
+                                  "chocolate3",
+                                  "darkslateblue",
+                                  "yellow3",
+                                  "darkred"))
+trait_df_name%<>%left_join(df_col_var)
+```
