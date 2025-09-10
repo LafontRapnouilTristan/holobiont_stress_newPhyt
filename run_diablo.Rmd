@@ -1,0 +1,118 @@
+#Load 
+
+##Packages
+
+```{r}
+easypackages::libraries(c("dplyr","magrittr","mixOmics"))
+```
+##Data
+
+### Microbiota
+
+Read microbiota data.
+```{r}
+micro_16s <- readRDS("./data/micro_data_16s.rds")
+micro_its <- readRDS("./data/micro_data_its.rds")
+
+datasets <- c("micro_16s","micro_its")
+```
+
+### Leaf traits
+
+```{r import_data, echo=FALSE,warning=FALSE}
+data_leaf <- read.csv("data/data_art1.csv") #load
+data_leaf$Trtmt <- as.factor(data_leaf$Trtmt) # treatment as factor
+levels(data_leaf$Trtmt) <- c("R-D","I-D","P-D","R-W","I-W","P-W") # change treatment code
+stress_order <- data_leaf %>%
+    group_by(Trtmt)%>%
+    summarise(mean_nb_fr=mean(Nb_Fr))%>%
+    arrange(desc(mean_nb_fr))
+data_leaf %<>% mutate(Trtmt = forcats::fct_relevel(Trtmt,as.vector(stress_order$Trtmt))) # change level order to increasing stress (decreasing fitness)
+
+```
+
+```{r}
+micro_16s$sample_table %<>%
+    mutate(Trtmt=forcats::fct_relevel(Trtmt,as.vector(stress_order$Trtmt)))
+micro_its$sample_table %<>%
+    mutate(Trtmt=forcats::fct_relevel(Trtmt,as.vector(stress_order$Trtmt)))
+
+rm(stress_order)
+```
+
+#Run
+
+## Diablo
+
+```{r}
+diablo_mod <- NULL
+for(i in datasets){
+  data_tmp <- get(i)
+  data_tmp <- clone(data_tmp)
+
+  mixomics_com <- t(data_tmp$otu_table)
+  
+  mixomics_com <- mixomics_com[,colSums(mixomics_com != 0)>=ceiling(nrow(data_tmp$sample_table)*0.05)] #5% prevalence filter
+  
+  mixomics_com <- labdsv::hellinger(mixomics_com)
+
+ treat <- data_tmp$sample_table$Trtmt
+  mixomics_env <-data_tmp$sample_table[,trait_list_glob] %>%
+    dplyr::select(!(`C.N_leaf`))
+
+  colnames(mixomics_com) <- gsub("M","",colnames(mixomics_com))
+  colnames(mixomics_env) <- trait_df_name$cleannames[match(colnames(mixomics_env),trait_df_name$rawnames)]
+
+  mydata <- list(Leaf_traits = scale(mixomics_env), OTUs_com = mixomics_com) #Here you build your two datasets that should be integrated
+
+  mydiablo <- block.splsda(X=mydata, Y=treat,ncomp=5,near.zero.var = T) #Here you build the sPLS-DA model Filter near zero var taxa
+
+  plotDiablo(mydiablo, ncomp=1,col.per.group =mo_col)
+
+  perf.diablo <- perf(mydiablo, validation = 'Mfold', folds = 3, nrepeat = 100,progressBar = T)
+
+  # set the optimal ncomp value
+  ncomp <- perf.diablo$choice.ncomp$WeightedVote["Overall.BER", "centroids.dist"]
+  # show the optimal choice for ncomp for each dist metric
+  perf.diablo$choice.ncomp$WeightedVote
+
+  # set grid of values for each component to test
+  test.keepX <- list (Leaf_traits = c(1:ncol(mydata$Leaf_traits)),
+                      OTUs_com = seq(10,ncol(mydata$OTUs_com),15))
+
+  # for square matrix filled with 0.1s
+  design = matrix(.5, ncol = length(mydata), nrow = length(mydata),
+                  dimnames = list(names(mydata), names(mydata)))
+  diag(design) = 0 # set diagonal to 0s
+
+  # run the feature selection tuning
+  tune.diablo <- tune.block.splsda(X = mydata,
+                                   Y = treat,
+                                   ncomp = ncomp,
+                                   test.keepX = test.keepX,
+                                   validation = 'Mfold',
+                                   design=design,
+                                   folds = 3,
+                                   nrepeat = 100,
+                                   progressBar = T,
+                                   dist = "centroids.dist")
+
+
+  list.keepX <- tune.diablo$choice.keepX # set the optimal values of features to retain
+
+  # set the optimised DIABLO model
+  final.diablo.model  <-  block.splsda(X = mydata, Y = treat, ncomp = ncomp,
+                                       keepX = list.keepX, design = design)
+
+ 
+  diablo_mod[[i]][["nontuned"]] <- mydiablo
+  diablo_mod[[i]][["perfing"]] <- perf.diablo
+  diablo_mod[[i]][["tuning"]] <- tune.diablo
+  diablo_mod[[i]][["final"]] <- final.diablo.model
+  }
+
+```
+
+```{r}
+save(file = "data/diablo_rds.rds",diablo_mod)
+```

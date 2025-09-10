@@ -112,14 +112,6 @@ cld_bxplot_wilcox <-
   }
 ```
 
-## Set seed
-
-Not sure its working with rmd
-
-```{r}
-# set.seed(973)
-```
-
 ## data
 
 ### Soil Chi
@@ -523,106 +515,6 @@ pair.adon.res1%>%
   save_as_image(path="./articlez/gen1/resultats/final/traits/pwise_permanova_pca.png")
 ```
 
-## TITAN
-
-```{r}
-TITcom_list <- NULL
-for(i in datasets){
-  tmp <- get(i)
-  tmp <- clone(tmp)
-  TITcom <- t(tmp$otu_table)
-  TITcom <- TITcom[,colSums(TITcom != 0)>=ceiling(nrow(tmp$sample_table)*0.05)] # remove otus present in less than 5% samples
-  # TITcom <- TITcom[,colSums(TITcom)>100] # keep otus with more than 100 reads
-  rownames(TITcom) <- as.numeric(gsub("_.+$","",rownames(TITcom))) # rename rows as numbers
-  TITenv <- data_leaf[data_leaf$number%in%rownames(TITcom),Nbcol] # get leaf data of samples for which i have the community
-  tmp$sample_table$sample_id
-  rownames(TITenv) <- rownames(data_leaf[data_leaf$number%in%rownames(TITcom),]) # rename rows as numbers
-
-  z <- TITcom # rename
-  quiet_titan <- quietly(titan)
-  # x <- TITenv
-  # n <- names(TITenv)
-  TITcom_list[[i]] <- TITcom
-  walk2(TITenv, names(TITenv), function(x, n) { # iterate titan for all tra16s of TITenv
-    y <- z[!is.na(x),] # rm when having na in env
-    y <- y[,apply(y, 2, function(x) sum(x>0))>3] # rm otus present less than 3 times in the data (alrdy done)
-    x <- x[!is.na(x)]
-
-    dir <- file.path(paste0("./articlez/gen1/resultats/final/titan/",i,"/"))
-    if (!dir.exists(dir)) dir.create(dir)
-    if(!dir.exists(paste0(dir,"/res_",n,".RDS")))titan(x, y, nBoot = 500, ncpus = 3, messaging = FALSE) %>%
-      saveRDS(paste0(dir,"/res_",n,".RDS")) # save the results in a .RDS file
-  })
-  gc()
-}
-```
-
-```{r}
-TITcom_list$meco_mo16s_seqsg_raref%>%
-  reshape2::melt()%>%
-  group_by(Var2)%>%
-  summarise(depths=sum(value))%>%
-  ggplot(aes(x=log(depths)))+
-  geom_histogram()+
-  theme_classic2()+
-  ggtitle("Bacteria")+
-  TITcom_list$meco_moits_seqsg_raref%>%
-  reshape2::melt()%>%
-  group_by(Var2)%>%
-  summarise(depths=sum(value))%>%
-  ggplot(aes(x=log(depths)))+
-  geom_histogram()+
-  theme_classic2()+
-  ggtitle("Fungi")
-```
-
-
-## TITAN on PCA
-
-```{r}
-TITcom_list_pca <- NULL
-for(i in datasets){
-  tmp <- get(i)
-  tmp <- clone(tmp)
-  TITcom <- t(tmp$otu_table)
-  TITcom <- TITcom[,colSums(TITcom != 0)>=ceiling(nrow(tmp$sample_table)*0.05)] # remove otus present in less than 5% samples
-  # TITcom <- TITcom[,colSums(TITcom)>100] # keep otus with more than 100 reads
-  rownames(TITcom) <- as.numeric(gsub("_.+$","",rownames(TITcom))) # rename rows as numbers
-  TITenv <- data_leaf[data_leaf$number%in%rownames(TITcom),Nbcol] # get leaf data of samples for which i have the community
-
-  pca_tmp <- PCA_plant_trait$ind$coord
-  pca_tmp%<>%
-    as.data.frame()%>%
-    mutate(rownumber=rownames(.),
-           number=data_leaf$number)
-
-  TITenv$PCA1 <- PCA_plant_trait$ind$coord[ which(pca_tmp$number%in%rownames(TITcom)),"Dim.1"]
-  TITenv$PCA2 <- PCA_plant_trait$ind$coord[ which(pca_tmp$number%in%rownames(TITcom)),"Dim.2"]
-
-  tmp$sample_table$sample_id
-  rownames(TITenv) <- rownames(data_leaf[data_leaf$number%in%rownames(TITcom),]) # rename rows as numbers
-
-  z <- TITcom # rename
-  quiet_titan <- quietly(titan)
-  # x <- TITenv
-  # n <- names(TITenv)
-  TITcom_list_pca[[i]] <- TITcom
-  walk2(TITenv[,c("PCA1","PCA2")], c("PCA1","PCA2"), function(x, n) { # iterate titan for all tra16s of TITenv
-    y <- z[!is.na(x),] # rm when having na in env
-    y <- y[,apply(y, 2, function(x) sum(x>0))>3] # rm otus present less than 3 times in the data (alrdy done)
-    x <- x[!is.na(x)]
-
-    dir <- file.path(paste0("./articlez/gen1/resultats/final/titan/",i,"/"))
-    if (!dir.exists(dir)) dir.create(dir)
-    if(!dir.exists(paste0(dir,"/res_",n,".RDS")))titan(x, y, nBoot = 500, ncpus = 3, messaging = FALSE) %>%
-      saveRDS(paste0(dir,"/res_",n,".RDS")) # save the results in a .RDS file
-  })
-  gc()
-}
-
-```
-
-
 
 ## Diablo
 
@@ -725,4 +617,120 @@ save(file = "./articlez/gen1/resultats/final/mixomics/diablo_rds.rds",diablo_mod
 ```{r}
 save.image(file = "./articlez/gen1/resultats/final/env_analysis.RData")
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## TITAN
+
+```{r}
+TITcom_list <- NULL
+for(i in datasets){
+  tmp <- get(i)
+  tmp <- clone(tmp)
+  TITcom <- t(tmp$otu_table)
+  TITcom <- TITcom[,colSums(TITcom != 0)>=ceiling(nrow(tmp$sample_table)*0.05)] # remove otus present in less than 5% samples
+  # TITcom <- TITcom[,colSums(TITcom)>100] # keep otus with more than 100 reads
+  rownames(TITcom) <- as.numeric(gsub("_.+$","",rownames(TITcom))) # rename rows as numbers
+  TITenv <- data_leaf[data_leaf$number%in%rownames(TITcom),Nbcol] # get leaf data of samples for which i have the community
+  tmp$sample_table$sample_id
+  rownames(TITenv) <- rownames(data_leaf[data_leaf$number%in%rownames(TITcom),]) # rename rows as numbers
+
+  z <- TITcom # rename
+  quiet_titan <- quietly(titan)
+  # x <- TITenv
+  # n <- names(TITenv)
+  TITcom_list[[i]] <- TITcom
+  walk2(TITenv, names(TITenv), function(x, n) { # iterate titan for all tra16s of TITenv
+    y <- z[!is.na(x),] # rm when having na in env
+    y <- y[,apply(y, 2, function(x) sum(x>0))>3] # rm otus present less than 3 times in the data (alrdy done)
+    x <- x[!is.na(x)]
+
+    dir <- file.path(paste0("./articlez/gen1/resultats/final/titan/",i,"/"))
+    if (!dir.exists(dir)) dir.create(dir)
+    if(!dir.exists(paste0(dir,"/res_",n,".RDS")))titan(x, y, nBoot = 500, ncpus = 3, messaging = FALSE) %>%
+      saveRDS(paste0(dir,"/res_",n,".RDS")) # save the results in a .RDS file
+  })
+  gc()
+}
+```
+
+```{r}
+TITcom_list$meco_mo16s_seqsg_raref%>%
+  reshape2::melt()%>%
+  group_by(Var2)%>%
+  summarise(depths=sum(value))%>%
+  ggplot(aes(x=log(depths)))+
+  geom_histogram()+
+  theme_classic2()+
+  ggtitle("Bacteria")+
+  TITcom_list$meco_moits_seqsg_raref%>%
+  reshape2::melt()%>%
+  group_by(Var2)%>%
+  summarise(depths=sum(value))%>%
+  ggplot(aes(x=log(depths)))+
+  geom_histogram()+
+  theme_classic2()+
+  ggtitle("Fungi")
+```
+
+
+## TITAN on PCA
+
+```{r}
+TITcom_list_pca <- NULL
+for(i in datasets){
+  tmp <- get(i)
+  tmp <- clone(tmp)
+  TITcom <- t(tmp$otu_table)
+  TITcom <- TITcom[,colSums(TITcom != 0)>=ceiling(nrow(tmp$sample_table)*0.05)] # remove otus present in less than 5% samples
+  # TITcom <- TITcom[,colSums(TITcom)>100] # keep otus with more than 100 reads
+  rownames(TITcom) <- as.numeric(gsub("_.+$","",rownames(TITcom))) # rename rows as numbers
+  TITenv <- data_leaf[data_leaf$number%in%rownames(TITcom),Nbcol] # get leaf data of samples for which i have the community
+
+  pca_tmp <- PCA_plant_trait$ind$coord
+  pca_tmp%<>%
+    as.data.frame()%>%
+    mutate(rownumber=rownames(.),
+           number=data_leaf$number)
+
+  TITenv$PCA1 <- PCA_plant_trait$ind$coord[ which(pca_tmp$number%in%rownames(TITcom)),"Dim.1"]
+  TITenv$PCA2 <- PCA_plant_trait$ind$coord[ which(pca_tmp$number%in%rownames(TITcom)),"Dim.2"]
+
+  tmp$sample_table$sample_id
+  rownames(TITenv) <- rownames(data_leaf[data_leaf$number%in%rownames(TITcom),]) # rename rows as numbers
+
+  z <- TITcom # rename
+  quiet_titan <- quietly(titan)
+  # x <- TITenv
+  # n <- names(TITenv)
+  TITcom_list_pca[[i]] <- TITcom
+  walk2(TITenv[,c("PCA1","PCA2")], c("PCA1","PCA2"), function(x, n) { # iterate titan for all tra16s of TITenv
+    y <- z[!is.na(x),] # rm when having na in env
+    y <- y[,apply(y, 2, function(x) sum(x>0))>3] # rm otus present less than 3 times in the data (alrdy done)
+    x <- x[!is.na(x)]
+
+    dir <- file.path(paste0("./articlez/gen1/resultats/final/titan/",i,"/"))
+    if (!dir.exists(dir)) dir.create(dir)
+    if(!dir.exists(paste0(dir,"/res_",n,".RDS")))titan(x, y, nBoot = 500, ncpus = 3, messaging = FALSE) %>%
+      saveRDS(paste0(dir,"/res_",n,".RDS")) # save the results in a .RDS file
+  })
+  gc()
+}
+
+```
+
 

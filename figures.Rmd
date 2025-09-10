@@ -1,17 +1,91 @@
 #I-Load
 
+```{r}
+easypackages::libraries(c("dplyr","FactoMineR","magrittr","ggplot2",
+                          "phyloseq","microeco","microViz","speedyseq",
+                          "ggpubr","patchwork","mixOmics"))
+```
+
+
+```{r}
+source("custom_fct/pairwise_letterZ.R")
+```
+
+```{r}
+
+# A function to ad compact letter significance display on a ggplot boxplot graph
+cld_bxplot_wilcox <-
+  function(data, x, y, significance = 0.05, plot, nudge = 0.05){
+    if (kruskal.test(y,x)$p.value<0.05){
+      box_rslt <- with(data,graphics::boxplot(y~x ,plot = F))
+      
+      loc_vec <- box_rslt$stats[nrow(box_rslt$stats),]
+      
+      wilcx_rslt <- with(data,pairwise.wilcox.test(x = y, g = x,p.adjust.method = 'holm'))
+      temp <- wilcx_rslt$p.value
+      
+      # Make a square matrix to populate with the alpha values.
+      n <- nrow(temp)
+      mat.names <- c(colnames(temp), rownames(temp)[n])
+      my.mat <- matrix(data = NA, nrow = n+1, ncol = n+1)
+      colnames(my.mat) <- mat.names
+      rownames(my.mat) <- mat.names
+      
+      # Add diagonal.
+      for (i in 1:nrow(my.mat)) {
+        my.mat[ i, i] <- 0
+      }
+      
+      # Get vector of p.values
+      stat <- na.exclude(as.vector(wilcx_rslt$p.value))
+      
+      # Add other cells to square matrix.
+      k=1
+      for (j in 1:(nrow(my.mat)-1)) {
+        for (i in ((j+1):nrow(my.mat))) {
+          my.mat[i,j] <-  my.mat[j,i] <- stat[k]
+          k=k+1
+        }
+      }
+      cld_vec <- multcompView::multcompLetters(my.mat, threshold=significance)
+      
+      #df with the letters
+      x_df <- c(1:length(cld_vec$Letters))
+      y_df <- box_rslt$stats[nrow(box_rslt$stats),]
+      cbd <- cld_vec$Letters
+      ltr_df <- data.frame(x_df, y_df, cbd)
+      
+      #get coord of the graph
+      plt1 <- ggplot2::ggplot_build(plot)
+      xmin = plt1 $layout$panel_params[[1]]$x.range[1]
+      xmax = plt1 $layout$panel_params[[1]]$x.range[2]
+      ymin = plt1 $layout$panel_params[[1]]$y.range[1]
+      ymax = plt1 $layout$panel_params[[1]]$y.range[2]
+      lmts <- list(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax)
+      y.range <- lmts$ymax - lmts$ymin
+      y.nudge <- nudge * y.range
+      
+      cld <- list(ltr_df = ltr_df, y.nudge = y.nudge)
+      
+      return(plot +
+               annotate(geom="text", x=cld$ltr_df$x_df, y=cld$ltr_df$y_df+cld$y.nudge, label=cld$ltr_df$cbd))
+    }
+    else {return(plot)}
+  }
+```
 
 
 ## data
 
+
 ### Soil Chi
 
 ```{r}
-soil_chi <- read.csv2("./data/chemistry/Chimie_sols.csv") #load
+soil_chi <- read.csv2("data/Chimie_sols.csv") #load
 colnames(soil_chi) <- c("ID","Mass","N_pct","C_pct","N_mg","C_mg","ConN","P_mgkg","pH_h2o") #rename
 soil_chi$trmt <- c(rep("P",3),rep("I",3),rep("R",3)) #set treatments label
 soil_chi%<>% mutate(across(2:9, as.numeric)) # transform to numeric
-soil_chi %<>% mutate(trmt = fct_relevel(trmt,"P","I","R")) # set factor levels order (poor to rich)
+soil_chi %<>% mutate(trmt = forcats::fct_relevel(trmt,"P","I","R")) # set factor levels order (poor to rich)
 ```
 
 ### Microbiota
@@ -19,38 +93,47 @@ soil_chi %<>% mutate(trmt = fct_relevel(trmt,"P","I","R")) # set factor levels o
 Read microbiota data.
 ```{r}
 micro_16s <- readRDS("./data/micro_data_16s.rds")
-```
+micro_its <- readRDS("./data/micro_data_its.rds")
 
-
-# same for the "datasets" variable that will be use to loop on
-datasets <- c("meco_mo16s_samsg",
-              "meco_mo16s_seqsg",
-              "meco_moits_samsg",
-              "meco_moits_seqsg",
-              "meco_mo16s_samsg_wrmed",
-              "meco_mo16s_seqsg_wrmed",
-              "meco_moits_samsg_wrmed",
-              "meco_moits_seqsg_wrmed",
-              "meco_mo16s_samsg_raref",
-              "meco_mo16s_seqsg_raref",
-              "meco_moits_samsg_raref",
-              "meco_moits_seqsg_raref",
-              "meco_mo16s_samsg_wrmed_raref",
-              "meco_mo16s_seqsg_wrmed_raref",
-              "meco_moits_samsg_wrmed_raref",
-              "meco_moits_seqsg_wrmed_raref")
-datasets <- datasets[c(10,12)]
+datasets <- c("micro_16s","micro_its")
 ```
 
 ### Leaf traits
 
 ```{r import_data, echo=FALSE,warning=FALSE}
-data_leaf <- read.csv("./articlez/gen1/data/data_art1.csv") #load
+data_leaf <- read.csv("data/data_art1.csv") #load
 data_leaf$Trtmt <- as.factor(data_leaf$Trtmt) # treatment as factor
 levels(data_leaf$Trtmt) <- c("R-D","I-D","P-D","R-W","I-W","P-W") # change treatment code
-data_leaf %<>% mutate(Trtmt = fct_relevel(Trtmt,"P-D","I-D","R-D","P-W","I-W","R-W")) # change level order to go from harsh to lenient env: DRY > poor/int/rich -> Wet > poor/int/rich
+stress_order <- data_leaf %>%
+    group_by(Trtmt)%>%
+    summarise(mean_nb_fr=mean(Nb_Fr))%>%
+    arrange(desc(mean_nb_fr))
+data_leaf %<>% mutate(Trtmt = forcats::fct_relevel(Trtmt,as.vector(stress_order$Trtmt))) # change level order to increasing stress (decreasing fitness)
 
-mo_col <- c("P-D"="#FFCC99","I-D"="#993300","R-D"="#330000","P-W"="#5697f5","I-W"="#1d61c2","R-W"="#052d66") # set treatments colors
+```
+
+```{r}
+micro_16s$sample_table %<>%
+    mutate(Trtmt=forcats::fct_relevel(Trtmt,as.vector(stress_order$Trtmt)))
+micro_its$sample_table %<>%
+    mutate(Trtmt=forcats::fct_relevel(Trtmt,as.vector(stress_order$Trtmt)))
+
+rm(stress_order)
+```
+
+
+
+```{r import_data, echo=FALSE,warning=FALSE}
+
+# 
+# "#742881"
+# "#C3A4CF"
+# "#E5D4E8"
+# "#D9F1D5"
+# "#5CAE63"
+# "#1B7939"
+
+trtmt_col <- c("R-W"="#1B7939","I-W"="#5CAE63","P-W"="#D9F1D5","P-D"="#E5D4E8","I-D"="#C3A4CF","R-D"="#742881") #set treatments colors
 var_cat_col <- c("biomass"="burlywood3","nutrient"="darkcyan","photosynthesis"="darkolivegreen4","structural"="chocolate3","water"="darkslateblue","reproduction"="yellow3") # set variable categories colors
 ```
 
@@ -100,11 +183,15 @@ trait_list_glob <- c("Nb_leaves", # list of used traits
                      "Nmg",
                      "Pmg",
                      "Nb_Fr")
-Nbcol <- match(trait_list_glob,colnames(data_leaf)) # get corresponding column indices
 
-trait_df_name <- data.frame(rawnames=trait_list_glob,cleannames=c('Number of leaves','Plant height','Leaf length','Leaf width', 'LMA', 'LDMC', 'Thickness','Stomata','Chlorophyll','Fv/Fm','ETRmax','Water potential','RWC','C/N','Soluble sugar','Carbon','Nitrogen','Phosphorous',"Number of Flowers")) # create clean names used for plots
+# get corresponding column indices
+Nbcol <- match(trait_list_glob,colnames(data_leaf))
 
-trait_df_name$unit <- c(bquote(""), # write units used for plots
+# create clean names used for plots
+trait_df_name <- data.frame(rawnames=trait_list_glob,cleannames=c('Number of leaves','Plant height','Leaf length','Leaf width', 'LMA', 'LDMC', 'Thickness','Stomata','Chlorophyll','Fv/Fm','ETRmax','Water potential','RWC','C/N','Soluble sugar','Carbon','Nitrogen','Phosphorous',"Number of Flowers")) 
+
+ # write units used for plots legends
+trait_df_name$unit <- c(bquote(""),
                         bquote("(cm)"),
                         bquote("(cm)"),
                         bquote("(cm)"),
@@ -124,7 +211,8 @@ trait_df_name$unit <- c(bquote(""), # write units used for plots
                         bquote("(mg.g"^-1~")"),
                         bquote(""))
 
-var_cat <- c("biomass", #set variable categories
+# set variable categories
+var_cat <- c("biomass", 
              "biomass",
              "biomass",
              "biomass",
@@ -161,4 +249,1632 @@ df_col_var <- data.frame(var_cat=c("biomass", # also store colors
                                   "yellow3",
                                   "darkred"))
 trait_df_name%<>%left_join(df_col_var)
+```
+
+# II Make Graphs
+
+##1) Plant fitness
+
+### Soil chemistry
+
+```{r}
+# Soil Nitrogen
+N <- ggplot(soil_chi,aes(x=trmt,y=N_mg/Mass, color=trmt))+ 
+  geom_point(size=3)+
+  scale_color_manual(values=c("#ffe1b0","#6b5e49","#0f0d0a"))+
+  theme_classic2()+
+  labs(color="Soil treatments (n=3)",
+       y=bquote(bold("Nitrogen (mg.mg "[DM]~")")),
+       x="")+
+    theme(text = element_text(face="bold"))
+
+# Soil Carbon
+C <- ggplot(soil_chi,aes(x=trmt,y=C_mg/Mass, color=trmt))+ 
+  geom_point(size=3)+
+  scale_color_manual(values=c("#ffe1b0","#6b5e49","#0f0d0a"))+
+  theme_classic2()+
+  labs(color="Soil treatments",
+       y=bquote(bold("Carbon (mg.mg "[DM]~")")),
+       x="")+
+  theme(legend.position="none",
+        text = element_text(face="bold"))
+
+# Soil Phosphorous
+P <- ggplot(soil_chi,aes(x=trmt,y=P_mgkg/1000, color=trmt))+
+  geom_point(size=3)+
+  scale_color_manual(values=c("#ffe1b0","#6b5e49","#0f0d0a"))+
+  theme_classic2()+
+  labs(color="Soil treatments",
+       y=bquote(bold("Phosphorous (mg.mg "[DM]~")")),
+       x="")+
+  theme(legend.position="none",
+        text = element_text(face="bold"))
+
+leg <- ggpubr::get_legend(N) #Extract legend
+
+soil_chi_plot <- (C|N+theme(legend.position="none"))/(P|leg)
+ggsave("results/figures/supp/soil_chi.png",soil_chi_plot, device="png",height = 7,width=5)
+```
+
+### POV traits
+
+```{r}
+# Traits partition of variance
+pov_list <- NULL #to store
+for(traits in trait_df_name$rawnames){ #for all traits
+  col <- data_leaf[,match(traits,colnames(data_leaf))] # get the trait values
+  data_temp <- data.frame(trait=col, drought=data_leaf$drought,substrate=data_leaf$substrate) # add treatment info
+  pov_list[[traits]] <- POV::POV(trait~drought*substrate,data_temp) # variance partitioning
+}
+pov_list %<>% # transform to ggplot compatible dataframe
+  purrr::map(~mutate(.,var_source=rownames(.)))%>%
+  purrr::map(~reshape2::melt(.))
+
+pov_merged <- bind_rows(pov_list, .id = "trait") # merge into one dataframe
+
+new_pov <- pov_merged%>% # rename variable and order factors
+  filter(variable=='% of total')%>%
+  arrange(value)%>%
+  mutate(var_source=as.factor(var_source),
+         rawnames=as.factor(trait))%>%
+  mutate(var_source=forcats::fct_relevel(var_source,
+                                         "Common",
+                                         "Between drought",
+                                         "Between substrate",
+                                         "Within drought",
+                                         "Within substrate",
+                                         "Between drought:substrate",
+                                         "Within drought:substrate"))
+
+var_order_common <- filter(new_pov,var_source=="Common")%>%
+  arrange(desc(value))%>%
+  mutate(order_com=1:nrow(.))%>%
+  dplyr::select(trait,order_com)
+var_order_drought <- filter(new_pov,var_source=="Between drought")%>%
+  arrange(desc(value))%>%
+  mutate(order_drought=1:nrow(.))%>%
+  dplyr::select(trait,order_drought)
+var_order_substrate <- filter(new_pov,var_source=="Between substrate")%>%
+  arrange(desc(value))%>%
+  mutate(orde_sbustrater=1:nrow(.))%>%
+  dplyr::select(trait,orde_sbustrater)
+
+new_pov <- plyr::join_all(list(new_pov,var_order_common,var_order_drought,var_order_substrate),by="trait")
+new_pov <- left_join(new_pov,trait_df_name)
+
+
+bar_traits_var <- new_pov%>% #build the graph
+  mutate(cleannames = forcats::fct_reorder(cleannames,var_cat))%>% # reorder levels
+  mutate(var_source = forcats::fct_relevel(var_source,"Common", after = Inf ))%>% # reorder levels
+  ggplot( aes(x=cleannames,y=value , fill= var_source)) + # plot
+  geom_bar(position =position_stack(reverse=T),stat="identity")+
+  scale_fill_brewer(palette='Set2', name="")+
+  theme_classic2()+
+  xlab("")+
+  ylab("% of variance")+ # theme
+  theme(axis.text.x = element_text(margin=margin(t=5),hjust=1))+
+  scale_y_continuous(expand=c(0,0))+
+  theme(legend.position = "bottom",
+        legend.justification = c("left"),
+        legend.box.just = "left",
+        legend.margin=margin(c(1,1,1,1)),
+        legend.box.margin=margin(1,1,1,1),
+        legend.box.spacing = unit(0, "pt"),
+        legend.key.size = unit(0.4, 'cm'),
+        legend.text = element_text(size=8),
+        legend.spacing.x = unit(1, "mm"),
+        legend.spacing.y = unit(1, "mm"))+
+    coord_flip()
+
+bar_trait <- (bar_traits_var+theme(axis.text = element_text(face="bold"), # transform to bold text
+                                   axis.title.x = element_text(face="bold"),
+                                   legend.text = element_text(face='bold')) | 
+                  trait_df_name%>% # add variable categories color
+                  mutate(cleannames = forcats::fct_reorder(cleannames,var_cat))%>%
+                  mutate(var_cat = forcats::fct_relevel(var_cat,
+                                                        c("biomass",'nutrient','photosynthesis','structural','water','reproduction')))%>%
+                  ggplot(aes(x=1,y=cleannames,fill=var_cat))+
+                  geom_tile()+
+                  theme_void()+
+                  scale_fill_manual(values = var_cat_col, 
+                                    name="Variable categories")+
+                  theme(legend.text = element_text(face="bold"),
+                        legend.title = element_text(face='bold')))+
+    plot_layout(widths = c(15,1))
+```
+
+```{r}
+ggsave("results/figures/supp//pov_traits.png",bar_trait,width = 10,height = 5)
+```
+
+### Leaf trait range
+
+```{r}
+pdens <- NULL
+for(i in Nbcol){ # for all variable in Nbcol  
+    
+    unitofvar <- trait_df_name$unit[match(names(data_leaf)[i],trait_df_name$rawnames)][[1]] # get units
+    var <-trait_df_name$cleannames[match(names(data_leaf)[i],trait_df_name$rawnames)] # get the variable
+    
+    plot <- local({
+        i<-i
+        ggplot(data_leaf,aes(x=data_leaf[,i],fill=Trtmt),alpha=.7)+ # plot the data
+            geom_boxplot()+
+            scale_fill_manual(values=trtmt_col,name="Treatments")+
+            theme_classic2()+
+            ylab("")+
+            xlab(bquote(bold(~.(var)~.(unitofvar))))+
+            theme(axis.text.x = element_text(angle = 90),
+                  axis.title.x = element_text(face="bold",color=arrange(trait_df_name,var_cat)[which(arrange(trait_df_name,var_cat)$rawnames==names(data_leaf)[i]),"colorz"]), # color X title according to variable category
+                  axis.text.y = element_blank(),
+                  axis.ticks.y = element_blank())})
+    pdens[[names(data_leaf)[i]]] <- plot
+}
+```
+
+```{r}
+# Build huge plot
+ptrait_range <-pdens$Nb_leaves+pdens$Pl_H+pdens$LL_H+pdens$LL_W+pdens$LMA+pdens$LDMC+pdens$mu_thick+pdens$sto_dens+pdens$chloro+pdens$FvFm+pdens$ETRmax+pdens$ETRmax+pdens$Water_pot+pdens$RWC+pdens$C.N_leaf+pdens$SS_leaf+pdens$Cmg+pdens$Nmg+pdens$Pmg+pdens$Nb_Fr+plot_layout(guides="collect",widths = c(1,1,1))&theme(axis.title = element_text(face="bold"),axis.text = element_text(face="bold"),legend.text = element_text(face = "bold"))
+ggsave("results/figures/supp/traits_range.png",ptrait_range,height = 13,width = 9)
+```
+
+### Fitness~Treatments
+
+```{r}
+p_nbfr_trtmt <- data_leaf %>%
+    ggplot(aes(x=Trtmt,y=Nb_Fr,fill=Trtmt))+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter(width=.2,size=.5,alpha=.8)+
+    scale_fill_manual(values=trtmt_col,name="Treatments")+
+    theme_classic2()+
+    ylab(bquote(bold(~.(trait_df_name$cleannames[19])~.(trait_df_name$units[19]))))+
+    theme(text=element_text(face="bold"),
+          axis.title.x = element_blank())
+
+
+p_nbfr_trtmt <- cld_bxplot_wilcox(data = data_leaf,
+                                  x = data_leaf$Trtmt,
+                                  y =  data_leaf$Nb_Fr,
+                                  plot = p_nbfr_trtmt,
+                                  nudge = .05)
+ggsave("results/figures/main/nbfr_trtmt.png",p_nbfr_trtmt,height = 2,width = 4)
+```
+
+
+##2) Ecosystem on a leash
+
+### Alpha-diversity
+
+### Diversity
+
+```{r}
+bxplt_alpha_list <- NULL
+flower_sr_list <- NULL
+for (i in datasets){
+  tmp <- get(i)
+  trtmt <- tmp$sample_table$Trtmt
+  Nb_fr <- tmp$sample_table$Nb_Fr
+  sr <- hillR::hill_taxa(t(tmp$otu_table), q = 0, MARGIN = 1, base = exp(1))
+  
+  bxp_sr <- ggplot(data.frame(sr,trtmt),aes(x=trtmt,y=sr,fill=trtmt))+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter()+
+    scale_fill_manual(values=trtmt_col)+
+    theme_classic2()+
+    ylab(paste0("Observed ",ifelse(grepl("16",i),"bacterial","fungal")," OTUs richness"))+
+    xlab("")+
+    labs(color="Treatment")+
+    theme(legend.key.size = unit(1.7, 'cm'),
+          legend.title = element_text(size=14),
+          legend.text = element_text(size=12))+
+    guides(color=guide_legend(ncol=2,
+                              title.hjust=0.5))
+  
+  df_fr_sr <- data.frame(sr,trtmt,Nb_fr)
+  lm_eqn <- function(df){
+    m <- lm(sr ~ Nb_fr, df_fr_sr);
+    eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
+                     list(a = format(unname(coef(m)[1]), digits = 2),
+                          b = format(unname(coef(m)[2]), digits = 2),
+                          r2 = format(summary(m)$r.squared, digits = 3)))
+    as.character(as.expression(eq));
+  }
+  
+  flower_sr_list[[i]] <- df_fr_sr%>%
+    ggplot(aes(x=Nb_fr,y=sr,color=trtmt))+
+    geom_point()+
+    scale_color_manual(values=trtmt_col)+
+    theme_classic2()+
+    ylab(paste0("Observed ",ifelse(grepl("16",i),"bacterial","fungal")," OTUs richness"))+
+    xlab("")+
+    labs(color="Treatment")+
+    theme(legend.key.size = unit(1.7, 'cm'),
+          legend.title = element_text(size=14),
+          legend.text = element_text(size=12))+
+    guides(color=guide_legend(ncol=2,
+                              title.hjust=0.5))+
+    geom_smooth(method="lm",color="black")+
+    annotate(geom = "text",label=paste0("pval: ",ifelse(gtools::stars.pval(summary(lm(data=df_fr_sr,sr~ Nb_fr))$coefficients[2,4])%in%c("."," "),"NS",                                      gtools::stars.pval(summary(lm(data=df_fr_sr,sr~ Nb_fr))$coefficients[2,4])),
+                                        collapse = "\n"),
+             x=min(Nb_fr)+(max(Nb_fr)-min(Nb_fr))*0.05,y=max(sr)+(max(sr)-min(sr))*0.3,hjust="left",vjust="Top",size=3,fontface=2)+
+    annotate(geom="text",label=lm_eqn(df_fr_sr),x=min(Nb_fr)+(max(Nb_fr)-min(Nb_fr))*0.05,y=max(sr)+(max(sr)-min(sr))*0.25,hjust="left",vjust="Top",size=3,parse=T)
+  
+  
+  bxp_sr <- cld_bxplot_wilcox(data = data.frame(sr,trtmt),
+                              x = data.frame(sr,trtmt)$trtmt,
+                              y =  data.frame(sr,trtmt)$sr,
+                              plot = bxp_sr,
+                              nudge = .05)
+  
+  
+  shan <- hillR::hill_taxa(t(tmp$otu_table), q = 1, MARGIN = 1, base = exp(1))
+  bxp_shan <- ggplot(data.frame(shan,trtmt),aes(x=trtmt,y=shan,fill=trtmt))+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter()+
+    scale_fill_manual(values=trtmt_col)+
+    theme_classic2()+
+    ylab(paste0(ifelse(grepl("16",i),"Bacterial","Fungal")," exponential Shannon entropy "))+
+    xlab("")+
+    theme(legend.position="none")
+  
+  bxp_shan <- cld_bxplot_wilcox(data = data.frame(shan,trtmt),
+                                x = data.frame(shan,trtmt)$trtmt,
+                                y =  data.frame(shan,trtmt)$shan,
+                                plot = bxp_shan,
+                                nudge = .05)
+  
+  invsimp <- hillR::hill_taxa(t(tmp$otu_table), q = 2, MARGIN = 1, base = exp(1))
+  bxp_invsimp <- ggplot(data.frame(invsimp,trtmt),aes(x=trtmt,y=invsimp,fill=trtmt))+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter()+
+    scale_fill_manual(values=trtmt_col)+
+    theme_classic2()+
+    ylab(paste0(ifelse(grepl("16",i),"Bacterial","Fungal")," Gini-Simpson index"))+
+    xlab("")+
+    labs(color="Treatment")+
+    theme(legend.position="none")
+  
+  bxp_invsimp <- cld_bxplot_wilcox(data = data.frame(invsimp,trtmt),
+                                   x = data.frame(invsimp,trtmt)$trtmt,
+                                   y =  data.frame(invsimp,trtmt)$invsimp,
+                                   plot = bxp_invsimp,
+                                   nudge = .05)
+  
+  
+  bxplt_alpha <- (bxp_sr+theme(legend.position="none")|bxp_shan)/(bxp_invsimp|EcophyCofog::xtract_legend(bxp_sr))
+  bxplt_alpha_list[[i]] <- bxplt_alpha
+}
+```
+
+Plot alpha-diversity~nb fruit (proxy fitness)
+```{r}
+flower_sr_list$micro_its$layers <- flower_sr_list$micro_its$layer[c(1,3,4)]
+p_otu_rich_stress <- flower_sr_list$micro_16s+theme(legend.position = "none")+ylab("Observed OTUs richnesss")+ggtitle("Bacteria")+flower_sr_list$micro_its+guides(color=guide_legend(byrow=T))+theme(axis.title.y = element_blank(),
+                                                                   legend.key.size = unit(1,"mm"),
+                                                                   legend.title = element_text(size=8))+ggtitle("Fungi")&
+    theme(text=element_text(face="bold"))+plot_layout(guides="collect")
+
+ggsave("results/figures/main/otu_rich_stress.png",p_otu_rich_stress,width = 6,height = 3)
+```
+
+Plot alpha-diversity~treatments (proxy fitness)
+```{r}
+test_bac_rich <- kruskal.test(bxplt_alpha_list$micro_16s[[1]][[1]]$data$sr,bxplt_alpha_list$micro_16s[[1]][[1]]$data$trtmt)
+test_bac_shan <- kruskal.test(bxplt_alpha_list$micro_16s[[1]][[2]]$data$shan,bxplt_alpha_list$micro_16s[[1]][[2]]$data$trtmt)
+
+
+p1 <- bxplt_alpha_list$micro_16s[[1]][[1]]
+p1 <- p1 + annotate("text",x=3,y=max(p1$data$sr*1.1),label=paste0("KW-Chi²=",round(test_bac_rich$statistic,digits=2)," | Df=",test_bac_rich$parameter," | p-value=",round(test_bac_rich$p.value,digits = 4)),fontface=2,size=2)+
+    ggtitle("Bacteria")+
+    ylab("Observed OTUs richenss")
+
+p2 <- bxplt_alpha_list$micro_16s[[1]][[2]]
+p2 <- p2 + annotate("text",x=3,y=max(p2$data$shan*1.1),label=paste0("KW-Chi²=",round(test_bac_shan$statistic,digits=2)," | Df=",test_bac_shan$parameter," | p-value=",round(test_bac_shan$p.value,digits = 4)),fontface=2,size=2)+
+    ylab("Exponential Shannon entropy")
+
+
+test_fun_rich <- kruskal.test(bxplt_alpha_list$micro_its[[1]][[1]]$data$sr,bxplt_alpha_list$micro_its[[1]][[1]]$data$trtmt)
+test_fun_shan <- kruskal.test(bxplt_alpha_list$micro_its[[1]][[2]]$data$shan,bxplt_alpha_list$micro_its[[1]][[2]]$data$trtmt)
+
+p3 <- bxplt_alpha_list$micro_its[[1]][[1]]
+p3 <- p3 + annotate("text",x=3,y=max(p3$data$sr*1.1),label=paste0("KW-Chi²=",round(test_fun_rich$statistic,digits=2)," | Df=",test_fun_rich$parameter," | p-value=",round(test_fun_rich$p.value,digits = 4)),fontface=2,size=2)+
+    ggtitle("Fungi")+
+    theme(axis.title.y = element_blank())
+
+p4 <- bxplt_alpha_list$micro_its[[1]][[2]]
+p4 <- p4 + annotate("text",x=3,y=max(p4$data$shan*1.1),label=paste0("KW-Chi²=",round(test_fun_shan$statistic,digits=2)," | Df=",test_fun_shan$parameter," | p-value=",round(test_fun_shan$p.value,digits = 4)),fontface=2,size=2)+
+    theme(axis.title.y = element_blank())
+
+comp_alpha <- (p1|p3)/(p2|p4)&theme(text=element_text(face="bold"))
+ggsave("results/figures/supp/hill_alpha_comp.png",comp_alpha,width = 5,height = 5)
+```
+
+
+##3) Anna Karenina principle
+
+###Beta diversity
+
+
+#### Data transformation
+
+
+Hellinger transformation
+```{r}
+for(i in datasets){
+  tmp <- get(i)
+  tmp <- clone(tmp) # break link between tmp and og file
+  tmp$tidy_dataset()
+  tmp$otu_table <- t(t(labdsv::hellinger(tmp$otu_table)))
+  tmp$sample_table %<>% mutate(nb_reads = colSums(tmp$otu_table),
+                               nb_motus = colSums(tmp$otu_table>0))
+  assign(paste0(i,"_hell"),tmp) 
+}
+```
+
+
+### Hill beta diversity
+
+### Hill betadiv
+
+```{r}
+beta_comb_list <- NULL
+plot_cor_beta <- NULL
+omg_pts <- NULL
+wilcx_res <- NULL
+for(i in datasets){
+  tmp_data <- get(i)
+  tmp_data <- clone(tmp_data)
+  beta_hill <- hillR::hill_taxa_parti_pairwise(
+    t(tmp_data$otu_table),
+    q = 1,
+    rel_then_pool = TRUE,
+    output = c("data.frame", "matrix"),
+    pairs =  "full",
+    .progress = TRUE,
+    show_warning = TRUE
+  )
+  
+  trtmt_info <- tmp_data$sample_table[,c("sample_id","Trtmt")]
+  names(trtmt_info) <- c("site1","trtmt")
+  beta <- beta_hill %>% left_join(trtmt_info,beta16s_hill,by="site1")
+  names(trtmt_info) <- c("site2","trtmt")
+  beta <- beta %>% left_join(trtmt_info,beta,by="site2")
+  
+  sim_comp <- filter(beta,trtmt.x==trtmt.y)
+  sim_comp_sitewise <- sim_comp %>% group_by(site1) %>% summarise(mean_beta = mean(TD_beta))
+  names(trtmt_info) <- c("site1","trtmt")
+  sim_comp_sitewise %<>% left_join(trtmt_info,by="site1")
+  
+  beta_bxpplot <- ggplot(sim_comp_sitewise,aes(x=trtmt,y=mean_beta,fill=trtmt,shape=trtmt))+
+    geom_boxplot(outlier.shape = NA)+
+    geom_jitter(width=.25)+
+    scale_fill_manual(values = trtmt_col,name="Treatment")+
+    scale_shape_manual(values = c(17,17,17,19,19,19),name="Treatment")+
+    theme_classic2()+
+    ylab("Within treatment average pairwise \u03B2diversity (q=1)")+
+    xlab("Treatment")+
+    ggtitle(ifelse(grepl("16s",i),"Bacteria","Fungi"))
+  
+  beta_bxpplot <- cld_bxplot_wilcox(data = sim_comp_sitewise,
+                                    x = sim_comp_sitewise$trtmt,
+                                    y =  sim_comp_sitewise$mean_beta,
+                                    plot = beta_bxpplot,
+                                    nudge = .07)
+  beta_comb_list[[i]] <- beta_bxpplot
+  
+  tmp_data$sample_table%<>%
+    dplyr::select(all_of(c(trait_list_glob)))%>%
+    mutate(site1 = rownames(.))
+  
+  sim_comp_sitewise%<>%left_join(tmp_data$sample_table)
+  for(j in trait_list_glob){
+    
+    lm_eqn <- function(df){
+      m <- lm(mean_beta ~ sim_comp_sitewise[[col]], sim_comp_sitewise);
+      eq <- substitute(italic(y) == a + b %.% italic(x)*","~~italic(r)^2~"="~r2, 
+                       list(a = format(unname(coef(m)[1]), digits = 2),
+                            b = format(unname(coef(m)[2]), digits = 2),
+                            r2 = format(summary(m)$r.squared, digits = 2)))
+      as.character(as.expression(eq));
+    }
+    
+    col <- colnames(sim_comp_sitewise)[which(colnames(sim_comp_sitewise)==j)]
+    plot_cor_beta[[i]][[j]] <- ggplot(sim_comp_sitewise,aes(x=.data[[col]],y=mean_beta))+
+      geom_point(mapping=aes(color=trtmt,shape=trtmt))+
+      scale_color_manual(values = trtmt_col,name='Treatments')+
+      scale_shape_manual(values = c(17,17,17,19,19,19),name="Treatments")+
+      theme_classic2()+
+      ggtitle(ifelse(grepl("16s",i),"Bacteria","Fungi"))+
+      annotate(geom = "text",label=paste0("pval: ",ifelse(gtools::stars.pval(summary(lm(data=sim_comp_sitewise,mean_beta~ sim_comp_sitewise[[col]]))$coefficients[2,4])%in%c("."," "),"NS",                                      gtools::stars.pval(summary(lm(data=sim_comp_sitewise,mean_beta~ sim_comp_sitewise[[col]]))$coefficients[2,4])),
+                                          collapse = "\n"),
+               x=min(sim_comp_sitewise[[col]])+(max(sim_comp_sitewise[[col]])-min(sim_comp_sitewise[[col]]))*0.05,y=max(sim_comp_sitewise$mean_beta)+(max(sim_comp_sitewise$mean_beta)-min(sim_comp_sitewise$mean_beta))*0.3,hjust="left",vjust="Top",size=4)+
+      annotate(geom="text",label=lm_eqn(sim_comp_sitewise),x=min(sim_comp_sitewise[[col]])+(max(sim_comp_sitewise[[col]])-min(sim_comp_sitewise[[col]]))*0.05,y=max(sim_comp_sitewise$mean_beta)+(max(sim_comp_sitewise$mean_beta)-min(sim_comp_sitewise$mean_beta))*0.25,hjust="left",vjust="Top",size=4,parse=T)+
+      ylim(c(min(sim_comp_sitewise$mean_beta)-(max(sim_comp_sitewise$mean_beta)-min(sim_comp_sitewise$mean_beta))*0.35,
+             max(sim_comp_sitewise$mean_beta)+(max(sim_comp_sitewise$mean_beta)-min(sim_comp_sitewise$mean_beta))*0.35))+
+      theme(axis.title=element_blank(),
+            axis.text.y = element_blank())+
+      scale_x_continuous(expand = c(0,0))+
+      theme(legend.position = ifelse(grepl("16s",i),"n","right"))
+    
+    lmtmp <-summary(lm(mean_beta ~ sim_comp_sitewise[[col]], sim_comp_sitewise))
+    if(lmtmp$coefficients[2,4]<0.05){
+      plot_cor_beta[[i]][[j]] <-plot_cor_beta[[i]][[j]]+
+        geom_smooth(method="lm",color="black")
+    }
+    
+    
+    grp_mean_df <- sim_comp_sitewise%>%
+      group_by(trtmt)%>%
+      summarize(mean_beta_grp=mean(mean_beta),
+                mean_trait=mean(.data[[col]]))
+    
+    
+    
+    lims_dens_beta <-c(min(sim_comp_sitewise$mean_beta)-(max(sim_comp_sitewise$mean_beta)-min(sim_comp_sitewise$mean_beta))*0.35,
+                       max(sim_comp_sitewise$mean_beta)+(max(sim_comp_sitewise$mean_beta)-min(sim_comp_sitewise$mean_beta))*0.35)
+    lims_dens_traits <- c(min(sim_comp_sitewise[[col]])-(max(sim_comp_sitewise[[col]])-min(sim_comp_sitewise[[col]]))*0.01,
+                          max(sim_comp_sitewise[[col]])+(max(sim_comp_sitewise[[col]])-min(sim_comp_sitewise[[col]]))*0.01)
+    
+    # get cld for traits
+    grp_mean_df$coord_cld <- rev(seq(to=round(lims_dens_beta[2]),by=0.1,length.out=6))
+    cld_vec <- pairwise_letterZ(sim_comp_sitewise,sim_comp_sitewise$trtmt,sim_comp_sitewise[[col]])
+    grp_mean_df$cld <- cld_vec
+    wilcx_res[[i]][[col]] <- cld_vec
+    
+    coord_cld_trait <- 
+      sim_comp_sitewise%>%
+      group_by(trtmt)%>%
+      summarise(densimean_trait=mean(density(.data[[col]])$y),
+                densimean_beta=mean(density(mean_beta)$y))
+    grp_mean_df%<>%left_join(coord_cld_trait)
+    
+    # get cld for beta
+    cld_vec_beta <- pairwise_letterZ(sim_comp_sitewise,sim_comp_sitewise$trtmt,sim_comp_sitewise$mean_beta)
+    grp_mean_df$cld_beta <- cld_vec_beta
+    wilcx_res[[i]][["beta"]] <- cld_vec_beta
+    
+    # plot densities
+    dens_beta <-
+      ggplot()+
+      geom_density(sim_comp_sitewise,mapping=aes(y=mean_beta,color=trtmt,fill=trtmt),alpha=.4)+
+      scale_color_manual(values=trtmt_col,name="Treatments")+
+      scale_fill_manual(values=trtmt_col,name="Treatments")+
+      ggrepel::geom_label_repel(grp_mean_df,mapping=aes(x=mean(densimean_beta),y=mean_beta_grp,label=cld_beta,color=trtmt),size=4,vjust=.5,hjust=.5)+
+      theme_bw()+
+      ylab(paste0("Within treatment average pairwise \u03B2diversity (q=1)"))+
+      scale_x_reverse(expand=c(0,0))+
+      theme(legend.position = "n",
+            axis.title.x = element_blank())+
+      scale_y_continuous(position='left',limits =lims_dens_beta)
+    
+    dens_trait <-   ggplot()+
+      geom_density(sim_comp_sitewise,mapping=aes(x=.data[[col]],color=trtmt,fill=trtmt),alpha=.4)+
+      scale_color_manual(values=trtmt_col,name="Treatments")+
+      scale_fill_manual(values=trtmt_col,name="Treatments")+
+      ggrepel::geom_label_repel(grp_mean_df,mapping=aes(x=mean_trait,y=mean(densimean_trait),label=cld,color=trtmt),size=4,vjust=.5,hjust=.5)+
+      theme_bw()+
+      scale_y_continuous(expand=c(0,0),position="right")+
+      theme(legend.position = "n")+
+      ylab("density")+
+      scale_x_continuous(expand = c(0,0))+
+      xlab(trait_df_name$cleannames[match(names(sim_comp_sitewise[col]),trait_df_name$rawnames)])
+    
+    
+    pts <-dens_beta+plot_cor_beta[[i]][[j]]+plot_spacer()+dens_trait+plot_layout(guides = "collect",widths = c(1,5),heights = c(7,1))
+    
+    omg_pts[[i]][[j]] <- pts
+  }
+}
+
+beta_dispersion_hill <- beta_comb_list$micro_16s+theme(axis.title.y = element_text(size=8))+beta_comb_list$micro_its+theme(axis.title.y = element_blank())+plot_layout(guides="collect")&theme(text = element_text(face = "bold"),axis.title.x = element_blank())
+
+ggsave(beta_dispersion_hill,filename="results/figures/main/beta_comb_hill.png",device="png",width=6,height=3)
+```
+
+betadisp ~fitness
+```{r}
+omg_pts$micro_its$Nb_Fr[[1]] <-  omg_pts$micro_its$Nb_Fr[[1]]+theme(axis.title.y = element_blank())
+
+beta_disp_fitness <- omg_pts$micro_16s$Nb_Fr&theme(text = element_text(face="bold"))|omg_pts$micro_its$Nb_Fr&theme(text = element_text(face="bold"),
+                                                                                                                   legend.key.size = unit(2,'mm'),
+                                                                                                                   legend.title = element_text(size=6))
+ggsave(beta_disp_fitness,filename="results/figures/main/betadisp_fitness.png",device="png",width=9,height=5)
+```
+
+##4) Plant phenotype
+### PCA plant traits
+
+
+```{r}
+# Run PCA on leaf traits but on C/N ratio as its redundant with C and N
+PCA_plant_trait <- PCA(data_leaf[,Nbcol[-c(14,33)]], scale.unit = T,  graph  = F ,ncp=length(Nbcol)-1)
+```
+
+
+```{r}
+#PCA biplot
+plot_pca<- factoextra::fviz_pca_biplot(PCA_plant_trait,
+                          geom="point",
+                          habillage = data_leaf$Trtmt,## color by groups
+                          addEllipses = TRUE, # add ellipses
+                          legend.title = "Treatment",
+                          ellipse.type="convex",
+                          pointsize=2,
+                          palette = trtmt_col,
+                          col.var="black"
+)+
+  scale_shape_manual(values = c(17,17,17,19,19,19))+
+  theme_classic2()+
+  theme(panel.background = element_rect(fill = "transparent"),
+        plot.background = element_rect(fill = "transparent", color = NA), 
+        legend.background = element_rect(fill = "transparent"),
+        legend.key.size = unit(.7, 'in'), 
+        legend.key.height = unit(.7, 'in'), 
+        legend.key.width = unit(.7, 'in'), 
+        legend.title = element_text(size=22),
+        legend.text = element_text(size=20), 
+        axis.title = element_text(size = 16),
+        plot.margin = margin(2, 2, 2, 2),
+        title = element_blank(),
+        text=element_text(face="bold"))
+
+ggsave(plot=plot_pca,
+       filename = "results/figures/main/pca_plant.svg", # save to svg for aesthetic edition with Inkscape: https://inkscape.org/
+       device = "svg",
+       width = 9, 
+       height = 7,
+       units = "in")
+```
+
+```{r}
+# Plot variable contribution to 2 first components and correlogram with farther components
+rownames(PCA_plant_trait$var$coord) <- trait_df_name$cleannames[match(rownames(PCA_plant_trait$var$coord),trait_df_name$rawnames)] # set rownames as clean variable names
+
+# on dim1
+contrib_dim1 <- factoextra::fviz_contrib(PCA_plant_trait,'var',fill='lightgrey',color='grey28')+
+  theme_classic2()+
+  scale_y_continuous(expand=c(0,0))+
+  labs(x="")+
+  theme(axis.text.x = element_text(angle=45,margin=margin(t=3),hjust=1,vjust=1))+
+  ggtitle("First dimension")
+# on dim2
+contrib_dim2 <- factoextra::fviz_contrib(PCA_plant_trait,'var',fill='lightgrey',color='grey28',axes=2)+
+  theme_classic2()+
+  scale_y_continuous(expand=c(0,0))+
+  labs(x="")+
+  theme(axis.text.x = element_text(angle=45,margin=margin(t=3),hjust=1,vjust=1))+
+  ggtitle("Second dimension")
+# combine
+contrib_var <- contrib_dim1/contrib_dim2
+
+# correlogram
+rownames(PCA_plant_trait$var$cos2) <- trait_df_name$cleannames[match(rownames(PCA_plant_trait$var$cos2),
+                                                                     trait_df_name$rawnames)]
+corrplot_pca_traits <- ggcorrplot::ggcorrplot(PCA_plant_trait$var$cos2, method = "square", tl.col = "black") 
+
+ggsave("results/figures/supp/corrplot_pca_leaf.png",corrplot_pca_traits,device="png",height = 7,width=8)
+ggsave("results/figures/supp/contrib_pca_leaf.png",contrib_var,device="png", height=7,width=8 )
+```
+
+
+##5) Microbial communities
+
+###Composition plot
+```{r}
+# create trans_abund object
+comp_barplots <- NULL
+for(i in datasets){ # for both datasets (its and 16s)
+  tmp <- get(i) # get the data
+  trans_tmp <- trans_abund$new(dataset = tmp, taxrank = "Class_conf", ntaxa = 12) # abundance @class level. The top 12 most abundant are kept, others are grouped
+  p_class <- trans_tmp$plot_bar(others_color = "grey70",facet = "Trtmt", xtext_keep = FALSE, legend_text_italic = FALSE) # plot it
+  
+  trans_tmp <- trans_abund$new(dataset = tmp, taxrank = "Order_conf", ntaxa = 12) # @order level
+  p_order <- trans_tmp$plot_bar(others_color = "grey70",facet = "Trtmt", xtext_keep = FALSE, legend_text_italic = FALSE)
+  
+  trans_tmp <- trans_abund$new(dataset = tmp, taxrank = "Family_conf", ntaxa = 12) # @family
+  p_family <- trans_tmp$plot_bar(others_color = "grey70",facet = "Trtmt", xtext_keep = FALSE, legend_text_italic = FALSE)
+  
+  trans_tmp <- trans_abund$new(dataset = tmp, taxrank = "Genus_conf", ntaxa = 12) # @genus
+  p_genus <- trans_tmp$plot_bar(others_color = "grey70",facet = "Trtmt", xtext_keep = FALSE, legend_text_italic = FALSE)
+  
+  plot_comb <- (p_class|p_order)/(p_family|p_genus) # merge
+  comp_barplots[[i]] <- plot_comb # store
+  ggsave(paste0("results/figures/supp/relab_",i,".png"),plot_comb, device="png", width=15,height = 10) # save
+}
+```
+
+ Make specific graph @genus level
+```{r}
+# set facet strip colors as treatments colors and bold title
+strips <- ggh4x::strip_themed(background_x = ggh4x::elem_list_rect(fill=trtmt_col),
+                              text_x = ggh4x::elem_list_text(color=c("white"),
+                                                             face="bold"))
+
+# set labels as [treatment]([sample size])
+trtmt_labels <- paste0(levels(micro_16s$sample_table$Trtmt)," (",c(12,8,6,13,8,10),")")
+names(trtmt_labels) <- levels(micro_16s$sample_table$Trtmt)
+
+# redo plot with these informations
+bac_genus_complot <- comp_barplots$micro_16s[[2]][[2]]$data%>% # get the relative abundance data from previous plot
+  ggplot(aes(y=Sample,x=Abundance,fill=Taxonomy))+ # plot
+  geom_bar(stat="identity",position = "stack",width = 1)+
+  ggh4x::facet_wrap2(~Trtmt,scales = "free_y",nrow = 6,strip = strips,labeller = labeller(Trtmt=trtmt_labels))+ # facet by treatments with custom facet looks
+  scale_fill_manual(values=c("grey60",rev(colorRampPalette(RColorBrewer::brewer.pal(8, "Dark2"))(12))),name="Bacterial genus")+ # expand Dark2 palette to encompass 12 genera
+  scale_x_continuous(expand = c(0,0))+
+  theme_classic2()+
+  theme(axis.text.y = element_blank(),axis.title.y = element_blank(),axis.ticks.y = element_blank())+
+  xlab("Relative abundance (%)")+
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.title = element_text(hjust = .5,face = "bold"),
+        legend.title.position = "top")+
+  guides(fill = guide_legend(override.aes = list(size = 0.25),ncol = 5))+
+  theme(legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7),
+        legend.key.size = unit(.5, "cm"),
+        legend.key.spacing = unit(0,"cm"))
+
+
+# same for fungi
+trtmt_labels <- paste0(levels(micro_its$sample_table$Trtmt)," (",c(14,15,7,15,13,15),")")
+names(trtmt_labels) <- levels(micro_its$sample_table$Trtmt)
+
+fung_genus_complot <- comp_barplots$micro_its[[2]][[2]]$data%>%
+  ggplot(aes(y=Sample,x=Abundance,fill=Taxonomy))+
+  geom_bar(stat="identity",position = "stack",width = 1)+
+  ggh4x::facet_wrap2(~Trtmt,scales = "free_y",nrow = 6,strip = strips,labeller = labeller(Trtmt=trtmt_labels))+
+  scale_fill_manual(values=c("grey60",rev(colorRampPalette(paletteer::paletteer_d("ggthemes::Classic_Green_Orange_12") )(12))),name="Fungal genus")+
+  scale_x_continuous(expand = c(0,0))+
+  theme_classic2()+
+  theme(axis.text.y = element_blank(),axis.title.y = element_blank(),axis.ticks.y = element_blank())+
+  xlab("Relative abundance (%)")+
+  theme(legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.title = element_text(hjust = .5,face = "bold"),
+        legend.title.position = "top") +
+  guides(fill = guide_legend(override.aes = list(size = 0.25),ncol = 5))+
+  theme(legend.title = element_text(size = 7), 
+        legend.text = element_text(size = 7),
+        legend.key.size = unit(.5, "cm"),
+        legend.key.spacing = unit(0,"cm"))
+
+# combine and save these plots
+comp <- bac_genus_complot+fung_genus_complot &
+    theme(text=element_text(face="bold"))
+ggsave("results/figures/main/composition_v1.png",comp,width = 13,height = 10)
+
+# same plot but tighter and with legend on the sides
+comp2 <- bac_genus_complot+theme(legend.position = "left",legend.direction = "vertical",legend.title = element_text(hjust = 1,face = "bold"))+
+  guides(fill=guide_legend(ncol=1,label.position="left"))+
+  fung_genus_complot+theme(legend.position = "right",legend.direction = "vertical",legend.title = element_text(hjust = 0,face = "bold"))+
+  guides(fill=guide_legend(ncol=1))&
+    theme(text=element_text(face="bold"))
+ggsave("results/figures/main/composition_v2.png",comp2,width = 8,height = 6)
+```
+
+###PCOA
+
+```{r}
+#check the hypothesis that dispersion is roughly the same between my groups in multivariate space
+dis <- vegan::vegdist(t(micro_16s_hell$otu_table),method="horn") #we create a distance matrix between our individuals
+mod <- vegan::betadisper(dis,micro_16s_hell$sample_table$Trtmt) #we calculate the multivarite dispersions i.e. average distance to centroids
+anova(mod) #now we check that they are no difference between our groups i.e. our idnividuals have the same dispersion in the multivariate space
+
+#p-value = 0.05119   non significative so our group dispersion is homogeneous between habitats
+k = 1000
+adon.res1 <- vegan::adonis2(t(micro_16s_hell$otu_table)~micro_16s_hell$sample_table$drought*micro_16s_hell$sample_table$substrate, perm = k, na.rm = T, method = "horn",p.adjust.methods="holm" ) 
+adon.res1%>%
+  mutate(Term=c("drought","substrate","drought:substrate","Residual","Total"),.before =1) %>%
+  flextable::flextable()%>%
+  flextable::save_as_image(path="results/stats/permanova_mubiota_16s.png")
+```
+
+```{r}
+pair.adon.res1 <- pairwiseAdonis::pairwise.adonis(t(micro_16s_hell$otu_table),micro_16s_hell$sample_table$Trtmt,p.adjust.m = "holm", sim.method = "horn", perm=k)
+pair.adon.res1%>%
+  flextable::flextable()%>%
+  flextable::width(width = c(1,.5,1.5,1.5,1.5,1.5,1.5,.5)) %>%
+  flextable::save_as_image(path="results/stats/pwise_permanova_mubiota_16s.png")
+```
+
+```{r}
+#check the hypothesis that dispersion is roughly the same between my groups in multivariate space
+dis <- vegan::vegdist(t(micro_its_hell$otu_table),method="horn") #we create a distance matrix between our individuals
+mod <- vegan::betadisper(dis,micro_its_hell$sample_table$Trtmt) #we calculate the multivarite dispersions i.e. average distance to centroids
+anova(mod) #now we check that they are no difference between our groups i.e. our idnividuals have the same dispersion in the multivariate space
+
+#p-value = 0.1369  non significative so our group dispersion is homogeneous between habitats
+k = 1000
+adon.res1 <- vegan::adonis2(t(micro_its_hell$otu_table)~micro_its_hell$sample_table$drought*micro_its_hell$sample_table$substrate, perm = k, na.rm = T, method = "horn",p.adjust.methods="holm" ) 
+adon.res1%>%
+    mutate(Term=c("drought","substrate","drought:substrate","Residual","Total"),.before =1) %>%
+    flextable::flextable()%>%
+    flextable::save_as_image(path="results/stats/permanova_mubiota_its.png")
+```
+
+```{r}
+pair.adon.res1 <- pairwiseAdonis::pairwise.adonis(t(micro_its_hell$otu_table),micro_its_hell$sample_table$Trtmt,p.adjust.m = "holm", sim.method = "horn", perm=k)
+pair.adon.res1%>%
+ flextable::flextable()%>%
+  flextable::width(width = c(1,.5,1.5,1.5,1.5,1.5,1.5,.5)) %>%
+  flextable::save_as_image(path="results/stats/pwise_permanova_mubiota_its.png")
+```
+
+```{r}
+methods_dist <- c("horn","bray","jaccard")
+pcoas_list <- NULL
+pcoas_taxa_list <- NULL
+ordi_list <- NULL
+for(d in datasets){
+  for(m in methods_dist){
+    
+    dtmp <- get(paste0(d,"_hell"))
+    dtmp <- clone(dtmp) #clone data
+    orditmp <- phyloseq::ordinate(file2meco::meco2phyloseq(dtmp), "PCoA", m) # run pcoa 
+    
+    pcoa_sites <- phyloseq::plot_ordination(file2meco::meco2phyloseq(dtmp), orditmp,type = "sites",axes = c(1,2),color = "Trtmt")
+    pcoa_taxa <- phyloseq::plot_ordination(file2meco::meco2phyloseq(dtmp), orditmp,type = "taxa",axes = c(1,2),color="Phylum_conf")
+    
+    orditmp$scores <- orditmp$vectors
+    envfitted <- vegan::envfit(orditmp,
+                        dtmp$sample_table[,c(trait_df_name$rawnames[-which(trait_df_name$rawnames=="C.N_leaf")])],
+                        permutations=9999)
+    
+    ordi_list[[i]][[m]] <- orditmp
+    
+    expl1 <- orditmp$values$Relative_eig[1]*100
+    expl2 <- orditmp$values$Relative_eig[2]*100
+    
+    en_coord_cont <- as.data.frame(vegan::scores(envfitted, "vectors")) * ggvegan:::arrow_mul(vegan::scores(envfitted, "vectors"),orditmp$vectors)
+    en_coord_cont%<>%
+      mutate(rawnames=rownames(.))%>%
+      left_join(trait_df_name)%>%
+      left_join(data.frame(rawnames=rownames(envfitted$vectors$arrows),
+                           r2=envfitted$vectors$r,
+                           psign=envfitted$vectors$pvals))
+    
+    df <- pcoa_sites$data
+    gg <- ggplot(data = df, aes(x = Axis.1, y = Axis.2)) + 
+      geom_point(data = df, aes(colour = Trtmt,shape=Trtmt), size = 3, alpha = 1) + 
+      scale_colour_manual(values = trtmt_col) + 
+      labs(colour = "Treatment")+
+      ylab(paste0("Dim2 (",round(expl2,2),"%)"))+
+      xlab(paste0("Dim1 (",round(expl1,2),"%)"))+
+      scale_shape_manual(values=c(17,17,17,19,19,19),name="Treatment")+
+      ggConvexHull::geom_convexhull(df,mapping=aes(x=Axis.1,y=Axis.2,fill = Trtmt, colour = Trtmt),
+                      alpha=0.2)+
+      scale_fill_manual(values=trtmt_col,name="Treatment")
+    
+    centro_df <- df%>%
+      group_by(Trtmt)%>%
+      summarise(centro_x=mean(Axis.1),
+                centro_y=mean(Axis.2))
+    
+    
+    df_taxa <- pcoa_taxa$data
+    gg_taxa <- ggplot(data = df_taxa, aes(x = Axis.1, y = Axis.2)) + 
+      geom_point(data = df_taxa, aes(colour = Phylum_conf), size = 3, alpha = 1) + 
+      ylab(paste0("Dim2 (",round(expl2,2),"%)"))+
+      xlab(paste0("Dim1 (",round(expl1,2),"%)"))
+    
+    pcoas_taxa_list[[d]][[m]] <- gg_taxa
+    
+    for(all_traits_or_no in c("alltraits","notalltraits")){
+      
+      
+      if(all_traits_or_no=="notalltraits"){
+        en_coord_cont2 <- en_coord_cont%>%
+          filter(psign<0.05)
+      }else{
+        en_coord_cont2 <- en_coord_cont
+      }
+      
+      pcoas_list[[d]][[m]][[all_traits_or_no]] <- gg+
+        geom_segment(aes(x = 0, y = 0, xend = Axis.1, yend = Axis.2), 
+                     data = en_coord_cont2, linewidth =1, colour = "grey65",arrow = arrow(length = unit(0.2,"cm")),lty=ifelse(en_coord_cont2$psign<0.05,1,2)) +
+        geom_point(centro_df,mapping=aes(x=centro_x,y=centro_y,color=Trtmt,shape=Trtmt),size=5)+
+        ggrepel::geom_text_repel(data = en_coord_cont2, aes(x = Axis.1, y = Axis.2), 
+                                 fontface = "bold",label=en_coord_cont2$cleannames,color=en_coord_cont2$colorz) + 
+        geom_vline(xintercept=0,lty=2)+
+        geom_hline(yintercept=0,lty=2)+
+        theme_classic2()+
+        theme(text=element_text(face="bold"))+
+        ggtitle(ifelse(grepl("16s",d),"Bacterial communities","Fungal communities"))
+    }
+  }
+}
+
+```
+
+
+```{r}
+pcoa_traits <- pcoas_list$micro_16s$horn$notalltraits+theme(legend.position = "none")+pcoas_list$micro_its$horn$notalltraits+theme(legend.key.size = unit(1,"mm"),legend.title = element_text(size=9))
+
+ggsave("results/figures/main/pcoa_traits.png",pcoa_traits,height = 5,width = 10)
+```
+
+
+##6) Host trait/Microbiota covariation
+
+###Mixomics' Diablo
+
+####Load results
+
+Diablo is ran from another script (run_diablo.rmd)
+```{r}
+load("data/diablo_rds.rds")
+```
+
+## Diablo
+
+```{r}
+# store figures
+diablo_figz <- NULL
+# store info regarding diablo outputs
+info_paper_diablo <- NULL
+# coordinates on the correlation circle at which we keep OTUs
+cutoff2use <- .4
+for(i in datasets){
+    
+    ntuned <- diablo_mod[[i]][["nontuned"]]
+    tuning <- diablo_mod[[i]][["tuning"]]
+    final <- diablo_mod[[i]][["final"]]
+    data_tmp <- get(i)
+    data_tmp <- clone(data_tmp)
+    pARR <- plotArrow(final,
+                      ind.names = FALSE,
+                      col.per.group = mo_col,
+                      legend = TRUE,
+                      title = "Arrow Plot")
+    
+    pIND <- plotIndiv(final, ind.names = FALSE, legend = TRUE, title = 'Data Integration',style='ggplot2',pch=20,ellipse=F,col.per.group = mo_col[c(3,1,5,4,2,6)])
+    
+    corcirvar <- plotVar(final, 
+                         var.names = TRUE, 
+                         style = 'graphics',
+                         # cutoff=cutoff2use, 
+                         legend = TRUE, 
+                         pch = c(16, 17),
+                         cex = c(1,0.8),
+                         col = c('aquamarine3', 'darkorange2'))
+    
+    corcirvar%<>%
+        mutate(names=rownames(.))%>%
+        mutate(names=ifelse(grepl("MOTU",names),gsub("M","",names),names))%>%
+        # filter(names%in%c(stabY[stabY$value>0.65,]$features,stabX[stabX$value>0.65,]$features))%>%
+        dplyr::rename(cleannames=names)%>%
+        left_join(trait_df_name)%>%
+        mutate(var_cat=ifelse(is.na(var_cat),"otus",as.character(var_cat)))%>%
+        mutate(var_cat=as.factor(var_cat))%>%
+        mutate(wellrep = ifelse(abs(x)>cutoff2use|abs(y)>cutoff2use,"yes","no"))
+    
+    corcirplot_diablo <-  ggplot(corcirvar, aes(x = x, y = y)) +
+        ggforce::geom_circle(aes(x0=0,y0=0,r=1),color="black")+
+        # ggforce::geom_circle(aes(x0=0,y0=0,r=.33),color="black")+
+        geom_point(data = filter(corcirvar,var_cat!="otus"&wellrep=="yes"),aes(color = var_cat),size=4,shape=17)+
+        ggrepel::geom_text_repel(data =filter(corcirvar,var_cat!="otus"&wellrep=="yes"),aes(label=cleannames,color = var_cat))+
+        scale_color_manual(values =c(biomass="burlywood3",
+                                     nutrient= "darkcyan",
+                                     photosynthesis="darkolivegreen4",
+                                     structural="chocolate3",
+                                     water="darkslateblue",
+                                     reproduction="yellow3",
+                                     otus= "darkred"), 
+                           name="Variable categories")+ 
+        guides(color = guide_legend(override.aes = aes(label = "")))+
+        ggnewscale::new_scale_color()+
+        geom_point(data = filter(corcirvar,var_cat=="otus"), # add arrows for variables
+                   aes(alpha=wellrep),size=3,shape=16,color="darkred") +
+        scale_alpha_manual(values = c("no"=.3,"yes"=1),label = paste0(c("|cor|>","|cor|<"),cutoff2use), name = "OTUs")+
+        xlim(c(-1,1))+
+        ylim(c(-1,1))+
+        geom_vline(xintercept = 0,linetype="dashed")+
+        geom_hline(yintercept = 0,linetype="dashed")+
+        theme_classic2()+
+        ylab("Component 2")+
+        xlab("Component 1")+
+        coord_fixed()+
+        ggtitle(ifelse(grepl("16s",i),"Bacteria","Fungi"))
+    
+    
+    
+    youch <- cimDiablo(final,
+                       color = colorRampPalette(c("darkblue","#a30800"))(6),
+                       color.Y = mo_col,
+                       comp=c(1,2),
+                       trim=F)
+    
+    data <- youch$mat[youch$row.names,youch$col.names]%>%
+        as.data.frame()
+    
+    df_tmp <- youch$mat[youch$row.names,youch$col.names]%>%
+        as.data.frame()%>%
+        mutate(sample_id=rownames(.))%>%
+        reshape2::melt()%>%
+        left_join(data_tmp$sample_table[,c("sample_id","Trtmt")])%>%
+        mutate(sample_id=str_extract(sample_id,"^[0-9]{2}"))%>%
+        mutate(sample_id=fct_relevel(sample_id,str_extract(youch$row.names,"^[0-9]{2}")))%>%
+        dplyr::rename(cleannames=variable)%>%
+        left_join(trait_df_name)%>%
+        mutate(var_cat=ifelse(is.na(var_cat),"otus",as.character(var_cat)))%>%
+        mutate(var_cat=as.factor(var_cat))%>%
+        mutate(var_cat=fct_relevel(var_cat,"biomass","nutrient","photosynthesis","structural","water","reproduction","otus"))%>%
+        filter(cleannames%in%corcirvar[corcirvar$wellrep=="yes","cleannames"])%>%
+        mutate(cleannames=as.factor(cleannames))%>%
+        mutate(cleannames=fct_relevel(cleannames,c(youch$col.names)[which(youch$col.names%in%corcirvar[corcirvar$wellrep=="yes","cleannames"])]))
+    
+    
+    tax_diablo <- data_tmp$tax_table[rownames(data_tmp$tax_table)%in%paste0("M",df_tmp$cleannames),] # extract taxonomic info about our OTUs
+    
+    tax_diablo %<>% 
+        mutate(class=gsub("c__","",Class_conf))%>% #save class info
+        unite(c(1:6),sep=";",col=Taxonomy)%>% # unite taxo info
+        mutate(low_tax = gsub("(;[a-z]__)+?$","",Taxonomy))%>%
+        mutate(low_tax = str_extract(pattern = "([a-z]__[^;]+?$)",string=low_tax))%>% # get lowest taxnomical info
+        mutate(lvl_lowtax = str_extract(pattern = "[a-z]__",string=low_tax))%>% # get associated tax level
+        mutate(low_tax = gsub("[a-z]__","",low_tax))%>%
+        mutate(lvl_lowtax = ifelse(lvl_lowtax == "g__", "sp.", 
+                                   ifelse(lvl_lowtax == "f__", "(Family)",
+                                          ifelse(lvl_lowtax == 'o__', "(Order)",
+                                                 ifelse(lvl_lowtax=="p__","(Phylum)",
+                                                        ifelse(lvl_lowtax=="k__","(Kingdom)","(Class)"))))))%>%
+        mutate(Var2=rownames(.)) #renames levels and get rownames
+    
+    df_tmp%<>%
+        mutate(Var2=paste0("M",cleannames))
+    
+    df_tmp%<>%
+        mutate(istitantoo=ifelse(Var2%in%rownames(file_titan[[i]]),"Yes","No"))%>%
+        left_join(tax_diablo)
+    
+    df_tmp%<>%
+        mutate(cleannames=as.character(cleannames))%>%
+        mutate(cleannames=ifelse(var_cat=="otus",paste0(cleannames," ",low_tax," ",lvl_lowtax),cleannames))%>%
+        mutate(cleannames=ifelse(istitantoo=="Yes",paste0("\u25cf ",cleannames),cleannames))
+    
+    var_order <-  df_tmp%>%
+        group_by(var_cat,cleannames)%>%
+        summarise(mean_val=mean(value))%>%
+        ungroup()%>%
+        arrange(var_cat,mean_val)%>%
+        mutate(cleannames=fct_inorder(cleannames))
+    
+    
+    
+    value_scale_range <- ceiling(max(abs(range(df_tmp$value))))
+    df_tmp%<>%
+        arrange(Trtmt,sample_id)%>%
+        mutate(sample_id=fct_inorder(sample_id))%>%
+        mutate(cleannames=fct_relevel(cleannames,levels(var_order$cleannames)))%>%
+        arrange(cleannames)
+    
+    
+    p1 <- df_tmp%>%
+        ggplot(aes(y=cleannames,x=sample_id,fill=value))+
+        geom_tile(color = "white")+
+        theme(axis.text.x = element_blank(), #element_text(angle = 90,vjust = .5,size=7)
+              axis.text.y = element_text(size =8),
+              axis.text = element_text(color="black"),
+              axis.ticks.x = element_blank(),
+              panel.background = element_blank(),
+              legend.position = "right",
+              axis.title = element_blank(),
+              plot.margin = unit(c(0, 0, 0, 0), "lines"))+
+        scale_fill_gradient2(low = "darkblue",mid = "lightyellow3", high = "#a30800",limits=c(-value_scale_range,value_scale_range))
+    
+    p2 <- df_tmp%>%
+        ggplot(aes(x=1,y=cleannames,fill=var_cat))+
+        geom_tile(color="white")+
+        scale_fill_manual(values = c(biomass="burlywood3",
+                                     nutrient="darkcyan",
+                                     photosynthesis="darkolivegreen4",
+                                     structural="chocolate3",
+                                     water="darkslateblue",
+                                     reproduction="yellow3",
+                                     otus="darkred"), 
+                          name="Variable categories")+
+        theme_void()
+    
+    p3 <- df_tmp%>%
+        ggplot(aes(x=sample_id,y=1,fill=Trtmt))+
+        geom_tile(color="white")+
+        scale_fill_manual(values = mo_col, 
+                          name="Treatments")+
+        theme_void()
+    
+    p_diablo <- p1+p2+p3+plot_spacer()+plot_layout(guides = "collect",widths = c(12,.2),heights = c(9,.2))
+    
+    
+    diablo_figz[[i]][["hmap"]] <- p_diablo
+    diablo_figz[[i]][["circ"]] <- corcirplot_diablo
+    
+    info_paper_diablo[[i]][["traits"]] <- corcirvar%>%filter(Block=="Leaf_traits")%>%dplyr::select(cleannames)
+    
+    info_paper_diablo[[i]][["ntraits"]] <-   corcirvar%>%filter(Block=="Leaf_traits")%>%nrow()
+    
+    info_paper_diablo[[i]][["otus"]] <- corcirvar%>%filter(Block=="OTUs_com")%>%dplyr::select(cleannames)
+    
+    info_paper_diablo[[i]][["notus"]] <- corcirvar%>%filter(Block=="OTUs_com")%>%nrow()
+    
+    info_paper_diablo[[i]][["interpratedotus"]] <-  dplyr::filter(corcirvar,var_cat=="otus"&wellrep=="yes")[,"cleannames"]
+    
+}
+
+```
+
+```{r}
+for(i in datasets){
+  for(t in gsub("_","",transfo_list)){
+    ggsave(paste0("./articlez/gen1/resultats/final/mixomics/diablo","_",i,"_",t,"_hmap.png"),diablo_figz[[i]][[t]][["hmap"]],width = 10,height = 11)
+    ggsave(paste0("./articlez/gen1/resultats/final/mixomics/diablo","_",i,"_",t,"_circ.png"),diablo_figz[[i]][[t]][["circ"]],width = 7,height = 7)
+  }
+}
+```
+
+```{r}
+notus_wellrep_list <- NULL
+for(i in datasets){
+  for(t in gsub("_","",transfo_list)){
+    diablo_tmp <- diablo_figz[[i]][[t]]
+    
+    for(cutoffgradient in c(0,.1,.2,.3,.4,.5,.6)){
+      
+      notus <- diablo_tmp$circ$data%>%
+        filter(var_cat=="otus")%>%
+        filter(abs(x)>cutoffgradient|abs(y)>cutoffgradient)%>%
+        nrow()
+      notus_wellrep_list[[i]][[t]] <- c(notus_wellrep_list[[i]][[t]],
+                                   notus)
+      
+    }
+  }
+}
+df <- data.frame(marker=c(rep("Bacteria",14),
+                          rep("Fungi",14)),
+                 transfo=rep(c(rep("hell",7),
+                               rep("clr",7)),
+                               2),
+                 coordinate_thrshld=rep(c(0,.1,.2,.3,.4,.5,.6),2),
+                 notus=c(notus_wellrep_list$meco_mo16s_seqsg_raref$hell,
+                         notus_wellrep_list$meco_mo16s_seqsg_raref$clr,
+                         notus_wellrep_list$meco_moits_seqsg_raref$hell,
+                         notus_wellrep_list$meco_moits_seqsg_raref$clr))
+
+number_of_diabided_otus <- df%>%
+  ggplot(aes(x=coordinate_thrshld,y=notus,fill=marker))+
+  geom_bar(stat="identity",position = "dodge")+
+  theme_classic2()+
+  scale_fill_manual(values=c(Bacteria="#E09322",Fungi="#3F5E61"))+
+  # scale_y_continuous(limits = c(0,360),expand = c(0,0))+
+  scale_x_continuous(breaks = c(0,.1,.2,.3,.4,.5,.6))+
+  theme(axis.text = element_text(face="bold"),
+        axis.text.x = element_text(angle = 45,hjust = 1,vjust = 1),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(face="bold"))+
+  ylab("Number of diablo OTUs")+
+  facet_wrap(.~transfo)
+ggsave("./articlez/gen1/resultats/final/mixomics/idedotus_cutoff.png",number_of_diabided_otus)
+```
+
+```{r}
+clust_wellrep_list <- NULL
+max_height_list <- NULL
+hclust_list <- NULL
+plot_list <- NULL
+for(i in datasets){
+  for(t in gsub("_","",transfo_list)){
+    diablo_tmp <- diablo_figz[[i]][[t]]
+    
+    for(cutoffgradient in c(0,.1,.2,.3,.4,.5)){
+      
+      print(paste0(i," & ",t," & ",cutoffgradient))
+      notus <- diablo_tmp$circ$data%>%
+        filter(var_cat=="otus")%>%
+        filter(abs(x)>cutoffgradient|abs(y)>cutoffgradient)
+      
+      rownames(notus) <- notus$cleannames
+      dist_coord <- notus[,c("x","y")]%>%dist(method="euclidean")
+      clust_coord <- hclust(dist_coord)
+      
+      
+      maxK <-ifelse(nrow(notus)<8,nrow(notus)-2,8)
+      
+      p <-fviz_nbclust(notus[,c("x","y")],FUNcluster = kmeans,k.max=maxK)+ggtitle(paste0("silhouette: ",cutoffgradient))
+      p2<-fviz_nbclust(notus[,c("x","y")],FUNcluster = kmeans,k.max=maxK,method = "wss")+ggtitle(paste0("wss: ",cutoffgradient))
+      p3<-fviz_nbclust(notus[,c("x","y")],FUNcluster = kmeans,k.max=maxK,method="gap_stat")+ggtitle(paste0("gapstat: ",cutoffgradient))
+      
+      clust_wellrep_list[[i]][[t]][[paste0("v",gsub("\\.","",cutoffgradient),"_nbclust")]] <- p/p3&theme(axis.title.y = element_blank())
+      clust_wellrep_list[[i]][[t]][[paste0("v",gsub("\\.","",cutoffgradient),"_ggdendro")]] <- ggdendro::ggdendrogram(clust_coord)+ggtitle(paste0("ggdendro: ",cutoffgradient))+
+        theme(axis.line.y = element_line(),
+              axis.text.x = element_blank())
+      
+      max_height_list[[i]][[t]] <- c(max_height_list[[i]][[t]], max(clust_coord$height))
+      hclust_list[[i]][[t]][[paste0("v",gsub("\\.","",cutoffgradient))]] <- clust_coord
+      
+      bp_tmp <-  NbClust::NbClust(notus[,c("x","y")],distance = "euclidean",method = "kmeans",min.nc = 2,max.nc = maxK)
+      
+      dfbp <-  bp_tmp$Best.partition%>%
+        reshape2::melt()%>%
+        mutate(cleannames=rownames(.),
+               value=paste0("clust_",value))%>%
+        dplyr::rename(cluster=value)
+      
+      dfbp <- diablo_tmp$circ$data%>%
+        filter(var_cat=="otus")%>%
+        left_join(dfbp)
+      
+      
+      
+      plot_list[[i]][[t]][[paste0("v",gsub("\\.","",cutoffgradient))]] <-   dfbp%>%
+        ggplot(aes(x,y,color=cluster))+
+        geom_point(alpha=.5)+
+        xlim(c(-1,1))+
+        ylim(c(-1,1))+
+        ggtitle(paste0("threshold: ",cutoffgradient))
+    }
+  }
+}
+ggarrange(plotlist=clust_wellrep_list$meco_mo16s_seqsg_raref$hell)
+ggarrange(plotlist=clust_wellrep_list$meco_moits_seqsg_raref$hell)
+
+
+ggarrange(plotlist = plot_list$meco_mo16s_seqsg_raref$hell,legend = "none")
+ggarrange(plotlist = plot_list$meco_moits_seqsg_raref$hell,legend = "none")
+
+```
+
+```{r}
+for(i in datasets){
+  for(t in gsub("_","",transfo_list)){
+    ptmp <- diablo_figz[[i]][[t]]$circ$data%>%
+      dplyr::filter(var_cat=="otus")%>%
+      mutate(dis2origin=sqrt(x^2+y^2))%>%
+      arrange(dis2origin)%>%
+      dplyr::select(x,y,dis2origin)%>%
+      gghistogram(x="dis2origin")+
+      ggtitle(ifelse(grepl("16s",i),"Bacteria","Fungi"))
+    ggsave(paste0("./articlez/gen1/resultats/final/mixomics/freq_dis2origin_",i,"_",t,".png"),ptmp)
+  }
+}
+```
+
+### Diablo with groups
+
+```{r}
+diablofigz_2 <- NULL
+pcirc_list <- NULL
+chsn_thrshld <- "v0" #represent all selected OTUS
+for(i in datasets){
+  for(t in gsub("_","",transfo_list)){
+  
+  ptest <- diablo_figz[[i]][[t]]$circ$data
+  tmp <- get(i)
+  tmp <- clone(tmp)
+  ptest %<>%
+    left_join(dplyr::select(plot_list[[i]][[t]][[chsn_thrshld]]$data,cleannames,cluster))
+  
+  # if(grepl("16s",i)){
+  #   ptest%<>%
+  #     mutate(otu_group=ifelse(x<0&y<0&wellrep=="yes","bac1",
+  #                             ifelse(y>0.3&wellrep=="yes","bac2",
+  #                                    ifelse(x>.4&wellrep=="yes","bac3","Not interprated"))))%>%
+  #     mutate(otu_group=as.factor(otu_group))%>%
+  #     mutate(otu_goup=fct_relevel(otu_group,"bac1","bac2","bac3","Not interprated"))
+  # }else{
+  #   ptest%<>%
+  #     mutate(otu_group=ifelse(x<(-.15)&wellrep=="yes","fung1",
+  #                             ifelse(x>(-0.15)&wellrep=="yes","fung2","Not interprated")))%>%
+  #     mutate(otu_group=as.factor(otu_group))%>%
+  #     mutate(otu_goup=fct_relevel(otu_group,"fung1","fung2","Not interprated"))
+  # }
+  if(grepl("16s",i)){
+    ptest%<>%
+      mutate(otu_group=ifelse(!is.na(cluster),
+                              paste0("Bac cluster",gsub("clust_"," ",cluster)),
+                              cluster))
+    
+    cluster_palette <- paletteer::paletteer_d("ochRe::winmar")[-6]%>%
+      rev()
+  }else{
+    ptest%<>%
+      mutate(otu_group=ifelse(!is.na(cluster),
+                              paste0("Fung cluster",gsub("clust_"," ",cluster)),
+                              cluster))
+                                  
+    cluster_palette <- colorzits <- rev(c("#F56455FF", "#2BAA92FF", "#15134BFF", "#9EC8FFFF", "#E9A800FF", "#00af66ff", "#ffebcc"))
+
+  }
+  
+  pcirc <- ggplot(ptest, aes(x = x, y = y)) +
+    ggforce::geom_circle(aes(x0=0,y0=0,r=1),color="black")+
+    geom_point(data = filter(ptest,var_cat!="otus"), #&wellrep=="yes"
+               aes(color = var_cat),
+               size=4,
+               shape=17)+
+    ggrepel::geom_text_repel(data =filter(ptest,var_cat!="otus"), #&wellrep=="yes"
+                             aes(label=cleannames,
+                                 color = var_cat),fontface="bold")+
+    scale_color_manual(values =c(biomass="burlywood3",
+                                 nutrient= "darkcyan",
+                                 photosynthesis="darkolivegreen4",
+                                 structural="chocolate3",
+                                 water="darkslateblue",
+                                 reproduction="yellow3"), 
+                       name="Variable categories")+ 
+    guides(color = guide_legend(override.aes = aes(label = "")))+
+    ggnewscale::new_scale_color()+
+    geom_point(data = filter(ptest,var_cat=="otus"),
+               aes(color=otu_group), #alpha=wellrep,
+               size=3,
+               shape=16) +
+    scale_color_manual(values = cluster_palette,
+                       name="Groups",
+                       na.translate=F)+
+    # scale_alpha_manual(values = c("no"=.3,"yes"=1),label = paste0(c("|cor|>","|cor|<"),cutoff2use), name = "OTUs")+
+    xlim(c(-1,1))+
+    ylim(c(-1,1))+
+    geom_vline(xintercept = 0,linetype="dashed")+
+    geom_hline(yintercept = 0,linetype="dashed")+
+    theme_classic2()+
+    ylab("Component 2")+
+    xlab("Component 1")+
+    coord_fixed()+
+    ggtitle(ifelse(grepl("16s",i),"Bacteria","Fungi"))
+  
+  pcirc_list[[i]][[t]] <- pcirc
+  youch <- cimDiablo(diablo_mod[[i]][[t]]$final,
+                     color = colorRampPalette(c("darkblue","#a30800"))(6),
+                     color.Y = mo_col,
+                     comp=c(1,2),
+                     trim=F)
+  
+  data <- youch$mat[youch$row.names,youch$col.names]%>%
+    as.data.frame()
+  
+  
+  
+  df_tmp <- youch$mat[youch$row.names,youch$col.names]%>%
+    as.data.frame()%>%
+    mutate(sample_id=rownames(.))%>%
+    reshape2::melt()%>%
+    left_join(tmp$sample_table[,c("sample_id","Trtmt")])%>%
+    mutate(sample_id=str_extract(sample_id,"^[0-9]{2}"))%>%
+    mutate(sample_id=fct_relevel(sample_id,str_extract(youch$row.names,"^[0-9]{2}")))%>%
+    dplyr::rename(cleannames=variable)%>%
+    left_join(trait_df_name)%>%
+    mutate(var_cat=ifelse(is.na(var_cat),"otus",as.character(var_cat)))%>%
+    mutate(var_cat=as.factor(var_cat))%>%
+    mutate(var_cat=fct_relevel(var_cat,"biomass","nutrient","photosynthesis","structural","water","reproduction","otus"))%>%
+    filter(cleannames%in%ptest[ptest$wellrep=="yes","cleannames"])%>%
+    mutate(cleannames=as.factor(cleannames))%>%
+    mutate(cleannames=fct_relevel(cleannames,c(youch$col.names)[which(youch$col.names%in%ptest[ptest$wellrep=="yes","cleannames"])]))
+  
+  
+  
+  order_features <- hclust(vegdist(t(data[,which(colnames(data)%in%df_tmp$cleannames)]),'euclidean'))$order
+  
+  
+  tax_diablo <- tmp$tax_table[rownames(tmp$tax_table)%in%paste0("M",df_tmp$cleannames),] # extract taxonomic info about our OTUs
+  
+  tax_diablo %<>% 
+    mutate(class=gsub("c__","",Class_conf))%>% #save class info
+    unite(c(1:6),sep=";",col=Taxonomy)%>% # unite taxo info
+    mutate(low_tax = gsub("(;[a-z]__)+?$","",Taxonomy))%>%
+    mutate(low_tax = str_extract(pattern = "([a-z]__[^;]+?$)",string=low_tax))%>% # get lowest taxnomical info
+    mutate(lvl_lowtax = str_extract(pattern = "[a-z]__",string=low_tax))%>% # get associated tax level
+    mutate(low_tax = gsub("[a-z]__","",low_tax))%>%
+    mutate(lvl_lowtax = ifelse(lvl_lowtax == "g__", "sp.", 
+                               ifelse(lvl_lowtax == "f__", "(Family)",
+                                      ifelse(lvl_lowtax == 'o__', "(Order)",
+                                             ifelse(lvl_lowtax=="p__","Phylum",
+                                                    ifelse(lvl_lowtax=="k__","Kingdom","(Class)"))))))%>%
+    mutate(Var2=rownames(.)) #renames levels and get rownames
+  
+  
+  df_tmp%<>%
+    mutate(Var2=paste0("M",cleannames))
+  
+  df_tmp%<>%
+    mutate(istitantoo=ifelse(Var2%in%rownames(file_titan[[i]]),"Yes","No"))%>%
+    left_join(tax_diablo)
+  
+  
+  df_tmp%<>%left_join(ptest)
+  
+  df_tmp%<>%
+    mutate(cleannames=as.character(cleannames))%>%
+    mutate(cleannames=ifelse(var_cat=="otus",paste0(cleannames," ",low_tax," ",lvl_lowtax),cleannames))%>%
+    mutate(cleannames=ifelse(istitantoo=="Yes",paste0("\u25cf ",cleannames),cleannames))
+  
+  var_order <-  df_tmp%>%
+    group_by(var_cat,cleannames)%>%
+    summarise(mean_val=mean(value))%>%
+    ungroup()%>%
+    arrange(var_cat,mean_val)%>%
+    mutate(cleannames=fct_inorder(cleannames))
+  
+  
+  
+  value_scale_range <- ceiling(max(abs(range(df_tmp$value))))
+  df_tmp%<>%
+    arrange(Trtmt,sample_id)%>%
+    mutate(sample_id=fct_inorder(sample_id))%>%
+    mutate(cleannames=fct_relevel(cleannames,levels(var_order$cleannames)))%>%
+    arrange(cleannames)
+  
+  df_tmp%<>%
+    mutate(var_cat=ifelse(var_cat=='otus',otu_group,as.character(var_cat)))
+  
+  var_cat_order <- levels(as.factor(pcirc$data$otu_group))
+  df_tmp%<>%mutate(var_cat=fct_relevel(var_cat,"biomass","nutrient","photosynthesis","structural","water","reproduction",var_cat_order))
+  
+  ordercleannames <- 
+    unique(df_tmp$cleannames[order(-rowSums(sapply(seq_along(youch$col.names), function(i)
+      i * grepl(youch$col.names[i], df_tmp$cleannames))), df_tmp$cleannames, decreasing = TRUE)])
+  
+  
+  df_tmp%<>%
+    mutate(cleannames=fct_relevel(cleannames,as.character(ordercleannames)[order_features]))
+  
+  
+  p1 <- df_tmp%>%
+    ggplot(aes(y=cleannames,x=sample_id,fill=value))+
+    geom_tile(color = "white")+
+    theme(axis.text.x = element_blank(), #element_text(angle = 90,vjust = .5,size=7)
+          axis.text.y = element_text(size =8),
+          axis.text = element_text(color="black"),
+          axis.ticks.x = element_blank(),
+          panel.background = element_blank(),
+          legend.position = "right",
+          axis.title = element_blank(),
+          plot.margin = unit(c(0, 0, 0, 0), "lines"))+
+    scale_fill_gradient2(low = "darkblue",mid = "#F9FAE8", high = "#a30800",limits=c(-value_scale_range,value_scale_range),na.value="white")
+  
+  
+  names(cluster_palette) <- var_cat_order
+  p2 <- df_tmp%>%
+    ggplot(aes(x=1,y=cleannames,fill=var_cat))+
+    geom_tile(color="white")+
+    scale_fill_manual(values = c(biomass="burlywood3",
+                                 nutrient="darkcyan",
+                                 photosynthesis="darkolivegreen4",
+                                 structural="chocolate3",
+                                 water="darkslateblue",
+                                 reproduction="yellow3",
+                                 cluster_palette), 
+                      name="Variable categories")+
+    theme_void()
+  
+  p3 <- df_tmp%>%
+    ggplot(aes(x=sample_id,y=1,fill=Trtmt))+
+    geom_tile(color="white")+
+    scale_fill_manual(values = mo_col, 
+                      name="Treatments")+
+    theme_void()
+  
+  
+  p_diablo <- p1+p2+p3+plot_spacer()+plot_layout(guides = "collect",widths = c(12,.5),heights = c(9,.2))
+  diablofigz_2[[i]][[t]] <- p_diablo
+  
+  }
+}
+```
+
+
+```{r}
+ggsave("./articlez/gen1/resultats/final/mixomics/diablo_16s_hmap_hell.png",diablofigz_2$meco_mo16s_seqsg_raref$hell)
+
+ggsave("./articlez/gen1/resultats/final/mixomics/diablo_its_hmap_hell.png",diablofigz_2$meco_moits_seqsg_raref$hell)
+
+```
+
+
+
+```{r}
+for(i in datasets){
+  for(t in gsub("_","",transfo_list)){
+    
+    ggsave(paste0("./articlez/gen1/resultats/final/mixomics/diablo_test_",i,"_",t,"_hmap.png"),diablofigz_2[[i]][[t]],width = 10,height = 11)
+    
+    pcirc_list[[i]][[t]]$layers <- list(pcirc_list[[i]][[t]]$layers[[1]],
+                                   pcirc_list[[i]][[t]]$layers[[4]],
+                                   pcirc_list[[i]][[t]]$layers[[2]],
+                                   pcirc_list[[i]][[t]]$layers[[3]],
+                                   pcirc_list[[i]][[t]]$layers[[5]],
+                                   pcirc_list[[i]][[t]]$layers[[6]])
+    ggsave(paste0("./articlez/gen1/resultats/final/mixomics/diablo_test_",i,"_",t,"_circ.png"),pcirc_list[[i]][[t]],width = 7,height = 8)
+  }
+}
+```
+
+
+
+#III Summary stats, tables
+
+## leaf traits
+
+### Traits table
+
+```{r}
+Stat_Frame <- matrix(0,19,4)
+data2 <- data_leaf[,c(1:5,Nbcol)]
+col_idx <- 5
+for ( i in data2[,c(6:23)]){
+  col_idx <- col_idx + 1
+  name <- names(data2[col_idx])
+  row <- as.numeric(match(name, names(data2)))
+  #kruskal
+  a <- kruskal.test(i~data2$Trtmt)
+  chi2kw <- a$statistic[[1]]
+  df <- a$parameter[[1]]
+  pval <- a$p.value
+  Stat_Frame[row-5, 1] <- name
+  Stat_Frame[row-5, 2] <- df
+  Stat_Frame[row-5, 3] <- chi2kw
+  Stat_Frame[row-5, 4] <- pval
+}
+
+colnames(Stat_Frame) <- c("var","df","chi2","krusk_pval")
+
+
+Mean_sd_Frame <- matrix(0,19,15)
+col_idx <- 5
+for ( i in data2[,6:23]){
+  col_idx <- col_idx + 1
+  name <- names(data2[col_idx])
+  moy <- as.numeric(tapply(i,data2$Trtmt,mean,na.rm = T))
+  sd <- as.numeric(tapply(i,data2$Trtmt,sd,na.rm = T))
+  row <- as.numeric(match(name, names(data2)))
+  mean_glob <- as.numeric(mean(i,na.rm = T))
+  sd_glob <- as.numeric(sd(i,na.rm = T))
+  coef_var <- (sd_glob/mean_glob)*100
+  Mean_sd_Frame[row-5,1] <- name
+  Mean_sd_Frame[row-5,2] <- signif(moy[1],digits = 3)
+  Mean_sd_Frame[row-5,4] <- signif(moy[2],digits = 3)
+  Mean_sd_Frame[row-5,6] <- signif(moy[3],digits = 3)
+  Mean_sd_Frame[row-5,8] <- signif(moy[4],digits = 3)
+  Mean_sd_Frame[row-5,10] <- signif(moy[5],digits = 3)
+  Mean_sd_Frame[row-5,12] <- signif(moy[6],digits = 3)
+  
+  Mean_sd_Frame[row-5,3] <- signif(sd[1],digits = 3)
+  Mean_sd_Frame[row-5,5] <- signif(sd[2],digits = 3)
+  Mean_sd_Frame[row-5,7] <- signif(sd[3],digits = 3)
+  Mean_sd_Frame[row-5,9] <- signif(sd[4],digits = 3)
+  Mean_sd_Frame[row-5,11] <- signif(sd[5],digits = 3)
+  Mean_sd_Frame[row-5,13] <- signif(sd[6],digits = 3)
+  
+  Mean_sd_Frame[row-5,14] <- signif(mean_glob,digits = 3)
+  Mean_sd_Frame[row-5,15] <- signif(sd_glob,digits = 3)
+  
+}
+
+rm(sd)
+data2 %>%
+  group_by(Trtmt) %>%
+  summarise(across(
+    .cols = where(is.numeric), 
+    .fns = list(mean = mean,sd =sd), na.rm=T,
+    .names = "{col}_{fn}"
+  ))
+
+colnames(Mean_sd_Frame) <- c("var",
+                             "P-D_mu","P-D_sd",
+                             "I-D_mu","I-D_sd",
+                             "R-D_mu", "R-D_sd",
+                             "P-W_mu","P-W_sd",
+                             "I-W_mu","I-W_sd",
+                             "R-W_mu", "R-W_sd",
+                             "global_mu", "global_sd")
+Mean_sd_Frame <- as.data.frame(Mean_sd_Frame)
+```
+
+```{r}
+source("./articlez/gen1/script/pairwise_letterZ.R")
+```
+
+```{r}
+letter_comp <- matrix(0,19,7)
+
+col_idx <- 5
+for (i in data2[,6:23]){
+  
+  col_idx <- col_idx + 1
+  cld_vec <- pairwise_letterZ(data2,data2$Trtmt,i)
+  cld_vec <- cld_vec[[1]]
+  name <- names(data2[col_idx])
+  row <- as.numeric(match(name, names(data2)))
+  
+  a <- ifelse(kruskal.test(i,data2$Trtmt)$p.value<0.05,1,0) 
+  
+  
+  letter_comp[row-5,1] <- name
+  ifelse(a==1,letter_comp[row-5,2] <- cld_vec[1],letter_comp[row-5,2] <- " ")
+  ifelse(a==1,letter_comp[row-5,3] <- cld_vec[2],letter_comp[row-5,3] <- " ")
+  ifelse(a==1,letter_comp[row-5,4] <- cld_vec[3],letter_comp[row-5,4] <- " ")
+  ifelse(a==1,letter_comp[row-5,5] <- cld_vec[4],letter_comp[row-5,5] <- " ")
+  ifelse(a==1,letter_comp[row-5,6] <- cld_vec[5],letter_comp[row-5,6] <- " ")
+  ifelse(a==1,letter_comp[row-5,7] <- cld_vec[6],letter_comp[row-5,7] <- " ")
+}
+
+letter_df <- as.data.frame(letter_comp)
+names( letter_df) <- c("var","P-D","I-D","R-D","P-W","I-W","R-W")
+```
+
+```{r}
+Mean_sd_Frame %<>%           
+  mutate(`KW-chi`=as.numeric(Stat_Frame[,3]),
+         `P-val`=as.character(Stat_Frame[,4])) %>%
+  dplyr::select(-c(global_mu,global_sd)) 
+```
+
+```{r}
+Mean_sd_Frame %<>% 
+  add_column(.after = 3,V2=ifelse(letter_df$`P-D`!= " ",paste0("(",letter_df$`P-D`,")")," "))%>%
+  add_column(.after = 6,V3=ifelse(letter_df$`I-D`!= " ",paste0("(",letter_df$`I-D`,")")," "))%>%
+  add_column(.after = 9,V4=ifelse(letter_df$`R-D`!= " ",paste0("(",letter_df$`R-D`,")")," "))%>%
+  add_column(.after = 12,V5=ifelse(letter_df$`P-W`!= " ",paste0("(",letter_df$`P-W`,")")," "))%>%
+  add_column(.after = 15,V6=ifelse(letter_df$`I-W`!= " ",paste0("(",letter_df$`I-W`,")")," "))%>%
+  add_column(.after = 18,V7=ifelse(letter_df$`R-W`!= " ",paste0("(",letter_df$`R-W`,")")," "))
+```
+
+```{r}
+NewVarNames <-  trait_df_name$cleannames
+```
+
+```{r}
+options(scipen=999)
+Mean_SD_Flex <-   Mean_sd_Frame%>%
+  dplyr::slice(-14)%>%
+  mutate(var = NewVarNames[-14])%>%
+  unite("P-D",c(`P-D_mu`,`P-D_sd`),sep=" ± ")%>%
+  unite("I-D",c(`I-D_mu`,`I-D_sd`),sep=" ± ")%>%
+  unite("R-D",c(`R-D_mu`,`R-D_sd`),sep=" ± ")%>%
+  unite("P-W",c(`P-W_mu`,`P-W_sd`),sep=" ± ")%>%
+  unite("I-W",c(`I-W_mu`,`I-W_sd`),sep=" ± ")%>%
+  unite("R-W",c(`R-W_mu`,`R-W_sd`),sep=" ± ")%>%  
+  unite("P-D",c(`P-D`,V2), sep = " ")%>%
+  unite("I-D",c(`I-D`,V3), sep = " ")%>%
+  unite("R-D",c(`R-D`,V4), sep = " ")%>%
+  unite("P-W",c(`P-W`,V5), sep = " ")%>%
+  unite("I-W",c(`I-W`,V6), sep = " ")%>%
+  unite("R-W",c(`R-W`,V7), sep = " ")%>%
+  mutate(`P-val`=round(as.numeric(`P-val`),digits=5))%>%
+  mutate(`KW-chi`=round(as.numeric(`KW-chi`),digits=3))%>%
+  mutate(`P-val`=ifelse(`P-val`<0.0001,"<0.0001",`P-val`))%>%
+  flextable::flextable()%>%
+  fontsize(size=8, part = "body")%>%
+  height_all(height = .3 )%>%
+  # theme_vanilla()%>%
+  add_header_row(top = T,values = c("Traits","Mean ± SD","Significance" ), colwidths = c(1,6,2))%>%
+  set_header_labels("var"=NA,"variation_coeff"="%")%>%
+  align(align = "center", part = "all")%>%
+  flextable::compose(j=1,i=10, value = as_paragraph("F",as_sub("v"),"F",as_sub("m")))%>%
+  flextable::compose(j=1,i=11, value = as_paragraph("ETR",as_sub("max")))%>%
+  bold(i=~`P-val`<0.05,j=9)%>%
+  fontsize(i=2,part="header",size=10)%>%
+  fontsize(i=1,part="header",size=12)%>%
+  flextable::width(j=1:9,width = c(2,3,3,3,3,3,3,1.5,2.5),unit = "cm")%>%
+  add_footer_lines(values = "Statistical summary table. For each trait the mean ± standard deviation (SD) is displayed for the three treatments. The associated Kruskal Wallis Chi² and P-values are shown. Significant P-values (<0.05) are in bold. Letters within brackets indicates significant pairwise differences, Wilcoxon pairwise test (\U03B1 < 0.05). Growth, Amax, GSmax and AUC have been measured on different plants. Treatments are P-D, Poor-Dry; I-D, Intermediate-Dry; R-D, Rich-Dry; P-W, Poor-Wet; I-W, Intermediate-Wet and; R-W, Rich-Wet.")%>%
+  fontsize(part = "footer", size=6)%>%
+  set_table_properties(width=0)
+```
+
+Export it to a docx compatible format
+
+```{r}
+library(officer)
+spec_properties <- prop_section(
+  page_size = page_size(orient = "portrait",
+                        width = (30/2.54), height = (30/2.54)),
+  type = "continuous",
+  page_margins = page_mar(bottom = .05,
+                          top = .05,
+                          right = 1,
+                          left = 1,
+                          header = 0.5,
+                          footer = 0.5,
+                          gutter = 0.5)
+)
+
+save_as_docx(Mean_SD_Flex,path="./articlez/gen1/resultats/final/traits/traits.docx", pr_section = spec_properties)
 ```
