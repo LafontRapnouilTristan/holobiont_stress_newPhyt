@@ -28,13 +28,13 @@
      inkscape:document-units="mm"
      showgrid="true"
      inkscape:snap-global="true"
-     inkscape:zoom="2.5620932"
-     inkscape:cx="242.18479"
-     inkscape:cy="392.84286"
+     inkscape:zoom="3.623347"
+     inkscape:cx="140.75384"
+     inkscape:cy="358.64631"
      inkscape:window-width="1920"
-     inkscape:window-height="1009"
-     inkscape:window-x="1912"
-     inkscape:window-y="-8"
+     inkscape:window-height="991"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
      inkscape:window-maximized="1"
      inkscape:current-layer="layer1">
     <inkscape:grid
@@ -102,6 +102,30 @@
      inkscape:label="Calque 1"
      inkscape:groupmode="layer"
      id="layer1">
+    <path
+       style="fill:none;stroke:#0cb302;stroke-width:0.270241px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 17.199859,88.637603 c 0,0 1e-6,-22.114068 1.320974,-22.114067 1.320974,1e-6 1.320974,22.114067 1.320974,22.114067"
+       id="path1913"
+       sodipodi:nodetypes="csc"
+       inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
+       inkscape:export-xdpi="800"
+       inkscape:export-ydpi="800" />
+    <path
+       style="fill:none;stroke:#98008f;stroke-width:0.216767px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 30.394189,88.635417 c 0,0 10e-7,-14.032913 1.339364,-14.032912 1.339364,0 1.339364,14.032912 1.339364,14.032912"
+       id="path1913-7"
+       sodipodi:nodetypes="csc"
+       inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
+       inkscape:export-xdpi="800"
+       inkscape:export-ydpi="800" />
+    <path
+       style="fill:none;stroke:#d2b2cb;stroke-width:0.259525px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:0.93333334"
+       d="m 23.802539,88.634671 c 0,0 1e-6,-20.338488 1.324653,-20.338487 1.324653,10e-7 1.324653,20.338487 1.324653,20.338487"
+       id="path1913-6"
+       sodipodi:nodetypes="csc"
+       inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
+       inkscape:export-xdpi="800"
+       inkscape:export-ydpi="800" />
     <text
        xml:space="preserve"
        style="font-weight:bold;font-size:1.76389px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.264583"
@@ -222,30 +246,6 @@
        style="fill:none;stroke:#000000;stroke-width:0.281671px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
        d="m 17.197916,66.145833 c 0,0 7.937502,10e-7 13.229168,5.997223 3.649693,4.136319 5.291666,16.49236 5.291666,16.49236"
        id="path1358"
-       sodipodi:nodetypes="csc"
-       inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-       inkscape:export-xdpi="800"
-       inkscape:export-ydpi="800" />
-    <path
-       style="fill:none;stroke:#0cb302;stroke-width:0.270241px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 17.199859,88.637603 c 0,0 1e-6,-22.114068 1.320974,-22.114067 1.320974,1e-6 1.320974,22.114067 1.320974,22.114067"
-       id="path1913"
-       sodipodi:nodetypes="csc"
-       inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-       inkscape:export-xdpi="800"
-       inkscape:export-ydpi="800" />
-    <path
-       style="fill:none;stroke:#98008f;stroke-width:0.216767px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-       d="m 30.394189,88.635417 c 0,0 10e-7,-14.032913 1.339364,-14.032912 1.339364,0 1.339364,14.032912 1.339364,14.032912"
-       id="path1913-7"
-       sodipodi:nodetypes="csc"
-       inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-       inkscape:export-xdpi="800"
-       inkscape:export-ydpi="800" />
-    <path
-       style="fill:none;stroke:#d2b2cb;stroke-width:0.259525px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:0.93333334"
-       d="m 23.802539,88.634671 c 0,0 1e-6,-20.338488 1.324653,-20.338487 1.324653,10e-7 1.324653,20.338487 1.324653,20.338487"
-       id="path1913-6"
        sodipodi:nodetypes="csc"
        inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
        inkscape:export-xdpi="800"
@@ -1583,7 +1583,7 @@
                  d="m 21.565462,128.97478 c 0,4.49791 0,3.96874 0,3.96874"
                  id="path108860" />
               <rect
-                 style="fill:#008727;fill-opacity:0.93333334;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+                 style="fill:#008727;fill-opacity:1;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
                  id="rect108772"
                  width="0.79374999"
                  height="2.1166666"
@@ -1601,7 +1601,7 @@
                  d="m 23.682128,130.03311 c 0,4.49791 0,3.96874 0,3.96874"
                  id="path108860-8" />
               <rect
-                 style="fill:#e1bed9;fill-opacity:0.93333334;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+                 style="fill:#e1bed9;fill-opacity:1;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
                  id="rect108772-7"
                  width="0.79374999"
                  height="2.1166666"
@@ -1619,12 +1619,12 @@
                  d="m 25.798795,131.35603 c 0,4.49791 0,3.96874 0,3.96874"
                  id="path108860-8-8" />
               <rect
-                 style="fill:#98008f;fill-opacity:0.93333334;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+                 style="fill:#98008f;fill-opacity:1;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
                  id="rect108772-7-2"
-                 width="0.79374999"
                  height="2.1166666"
                  x="25.40192"
-                 y="132.29166" />
+                 y="132.29166"
+                 width="0.79356164" />
               <path
                  style="fill:none;stroke:#000000;stroke-width:0.12;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
                  d="m 25.4,133.35 c 0.899584,0 0.79375,0 0.79375,0"
@@ -1721,7 +1721,7 @@
                  d="m 37.440462,132.41436 c 0,4.49791 0,3.96874 0,3.96874"
                  id="path108860-2" />
               <rect
-                 style="fill:#008727;fill-opacity:0.93333334;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+                 style="fill:#008727;fill-opacity:1;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
                  id="rect108772-1"
                  width="0.79374999"
                  height="2.1166666"
@@ -1740,7 +1740,7 @@
                  d="m 39.557128,131.35603 c 0,4.49791 0,3.96874 0,3.96874"
                  id="path108860-8-9" />
               <rect
-                 style="fill:#e1bed9;fill-opacity:0.93333334;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+                 style="fill:#e1bed9;fill-opacity:0.98920858;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
                  id="rect108772-7-1"
                  width="0.79374999"
                  height="2.1166666"
@@ -1758,7 +1758,7 @@
                  d="m 42.202962,130.2977 c 0,4.49791 0,3.96874 0,3.96874"
                  id="path108860-8-8-7" />
               <rect
-                 style="fill:#98008f;fill-opacity:0.93333334;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+                 style="fill:#98008f;fill-opacity:1;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
                  id="rect108772-7-2-5"
                  width="0.79374999"
                  height="2.1166666"
@@ -1865,7 +1865,7 @@
                d="m 37.440462,132.41436 c 0,4.49791 0,3.96874 0,3.96874"
                id="path108860-2-0" />
             <rect
-               style="fill:#008727;fill-opacity:0.93333334;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+               style="fill:#008727;fill-opacity:1;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
                id="rect108772-1-4"
                width="0.79374999"
                height="2.1166666"
@@ -1884,7 +1884,7 @@
                d="m 39.557128,131.35603 c 0,4.49791 0,3.96874 0,3.96874"
                id="path108860-8-9-2" />
             <rect
-               style="fill:#e1bed9;fill-opacity:0.93333334;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+               style="fill:#e1bed9;fill-opacity:1;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
                id="rect108772-7-1-0"
                width="0.79374999"
                height="2.1166666"
@@ -1902,7 +1902,7 @@
                d="m 42.202962,130.2977 c 0,4.49791 0,3.96874 0,3.96874"
                id="path108860-8-8-7-2" />
             <rect
-               style="fill:#98008f;fill-opacity:0.93333334;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
+               style="fill:#98008f;fill-opacity:1;stroke:#000000;stroke-width:0.12;stroke-linecap:square;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;paint-order:fill markers stroke"
                id="rect108772-7-2-5-9"
                width="0.79374999"
                height="2.1166666"
