@@ -1,6 +1,11 @@
 .Rproj.user
 .Rhistory
-.RData
+*.RData
 .Ruserdata
 data/
 results/
+*.fasta
+*.svg
+*.png
+taxdb
+clean_metabar_data

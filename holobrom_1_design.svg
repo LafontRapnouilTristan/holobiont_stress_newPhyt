@@ -7,7 +7,7 @@
    viewBox="0 0 210 297"
    version="1.1"
    id="svg5"
-   inkscape:version="1.1.1 (3bf5ae0d25, 2021-09-20)"
+   inkscape:version="1.1.2 (0a00cf5339, 2022-02-04)"
    sodipodi:docname="holobrom_1_design.svg"
    inkscape:export-filename="C:\Users\Arthur Collu Collu\Desktop\ProjetsR\holobiont_stress_newPhyt\design.png"
    inkscape:export-xdpi="800"
@@ -19,7 +19,7 @@
    xmlns:svg="http://www.w3.org/2000/svg">
   <sodipodi:namedview
      id="namedview7"
-     pagecolor="#505050"
+     pagecolor="#979797"
      bordercolor="#eeeeee"
      borderopacity="1"
      inkscape:pageshadow="0"
@@ -28,21 +28,43 @@
      inkscape:document-units="mm"
      showgrid="true"
      inkscape:snap-global="true"
-     inkscape:zoom="3.623347"
-     inkscape:cx="140.75384"
-     inkscape:cy="358.64631"
-     inkscape:window-width="1920"
-     inkscape:window-height="991"
-     inkscape:window-x="-9"
-     inkscape:window-y="-9"
-     inkscape:window-maximized="1"
-     inkscape:current-layer="layer1">
+     inkscape:zoom="2.5620932"
+     inkscape:cx="235.35444"
+     inkscape:cy="402.40535"
+     inkscape:window-width="1175"
+     inkscape:window-height="1883"
+     inkscape:window-x="26"
+     inkscape:window-y="23"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="g246658">
     <inkscape:grid
        type="xygrid"
        id="grid824" />
   </sodipodi:namedview>
   <defs
      id="defs2">
+    <inkscape:path-effect
+       effect="bspline"
+       id="path-effect15589"
+       is_visible="true"
+       lpeversion="1"
+       weight="33.333333"
+       steps="2"
+       helper_size="0"
+       apply_no_weight="true"
+       apply_with_weight="true"
+       only_selected="false" />
+    <inkscape:path-effect
+       effect="bspline"
+       id="path-effect10335"
+       is_visible="true"
+       lpeversion="1"
+       weight="33.333333"
+       steps="2"
+       helper_size="0"
+       apply_no_weight="true"
+       apply_with_weight="true"
+       only_selected="false" />
     <inkscape:path-effect
        effect="bspline"
        id="path-effect36514"
@@ -103,7 +125,7 @@
      inkscape:groupmode="layer"
      id="layer1">
     <path
-       style="fill:none;stroke:#0cb302;stroke-width:0.270241px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       style="fill:none;stroke:#0cb302;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
        d="m 17.199859,88.637603 c 0,0 1e-6,-22.114068 1.320974,-22.114067 1.320974,1e-6 1.320974,22.114067 1.320974,22.114067"
        id="path1913"
        sodipodi:nodetypes="csc"
@@ -111,7 +133,7 @@
        inkscape:export-xdpi="800"
        inkscape:export-ydpi="800" />
     <path
-       style="fill:none;stroke:#98008f;stroke-width:0.216767px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       style="fill:none;stroke:#98008f;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
        d="m 30.394189,88.635417 c 0,0 10e-7,-14.032913 1.339364,-14.032912 1.339364,0 1.339364,14.032912 1.339364,14.032912"
        id="path1913-7"
        sodipodi:nodetypes="csc"
@@ -119,7 +141,7 @@
        inkscape:export-xdpi="800"
        inkscape:export-ydpi="800" />
     <path
-       style="fill:none;stroke:#d2b2cb;stroke-width:0.259525px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:0.93333334"
+       style="fill:none;stroke:#d2b2cb;stroke-width:0.25;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:0.93333334;stroke-miterlimit:4;stroke-dasharray:none"
        d="m 23.802539,88.634671 c 0,0 1e-6,-20.338488 1.324653,-20.338487 1.324653,10e-7 1.324653,20.338487 1.324653,20.338487"
        id="path1913-6"
        sodipodi:nodetypes="csc"
@@ -301,48 +323,6 @@
        inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
        inkscape:export-xdpi="800"
        inkscape:export-ydpi="800" />
-    <text
-       xml:space="preserve"
-       style="font-weight:bold;font-size:2.11666px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.132291;fill:#008727;fill-opacity:0.93333334"
-       x="17.823393"
-       y="92.13427"
-       id="text3826"
-       inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-       inkscape:export-xdpi="800"
-       inkscape:export-ydpi="800"><tspan
-         sodipodi:role="line"
-         id="tspan3824"
-         style="stroke-width:0.132291;fill:#008727;fill-opacity:0.93333334"
-         x="17.823393"
-         y="92.13427">A</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-weight:bold;font-size:2.11666px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.132291;fill:#e1bed9;fill-opacity:0.93333334"
-       x="24.391651"
-       y="92.13427"
-       id="text4358"
-       inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-       inkscape:export-xdpi="800"
-       inkscape:export-ydpi="800"><tspan
-         sodipodi:role="line"
-         id="tspan4356"
-         style="stroke-width:0.132291;fill:#e1bed9;fill-opacity:0.93333334"
-         x="24.391651"
-         y="92.13427">B</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-weight:bold;font-size:2.11666px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.132291;fill:#98008f;fill-opacity:0.93333334"
-       x="31.040346"
-       y="92.13427"
-       id="text5030"
-       inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-       inkscape:export-xdpi="800"
-       inkscape:export-ydpi="800"><tspan
-         sodipodi:role="line"
-         id="tspan5028"
-         style="stroke-width:0.132291;fill:#98008f;fill-opacity:0.93333334"
-         x="31.040346"
-         y="92.13427">C</tspan></text>
     <path
        id="path7626"
        style="mix-blend-mode:normal;fill:url(#linearGradient10264);fill-opacity:1;stroke:url(#linearGradient10199);stroke-width:0.0409463;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:0.80000001"
@@ -517,7 +497,7 @@
          y="89.025719">Environmental gradient</tspan></text>
     <g
        id="g102587"
-       transform="matrix(0.01692827,0,0,0.01737106,22.440775,72.590116)"
+       transform="matrix(0.01692827,0,0,0.01737106,22.440775,74.177617)"
        inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
        inkscape:export-xdpi="800"
        inkscape:export-ydpi="800">
@@ -639,7 +619,7 @@
     </g>
     <g
        id="g102809"
-       transform="translate(26.280949,-1.3414103)"
+       transform="translate(26.280949,0.24608971)"
        inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
        inkscape:export-xdpi="800"
        inkscape:export-ydpi="800">
@@ -753,7 +733,7 @@
     </g>
     <g
        id="g97377-8"
-       transform="matrix(0.01956316,0,0,0.02007487,15.614198,69.439542)"
+       transform="matrix(0.01956316,0,0,0.02007487,15.614198,71.027043)"
        inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
        inkscape:export-xdpi="800"
        inkscape:export-ydpi="800">
@@ -1316,6 +1296,48 @@
     <g
        id="g246658"
        transform="matrix(1.108254,0,0,1.108254,-16.383137,-5.670277)">
+      <rect
+         style="fill:#a6ab92;fill-opacity:1;stroke:none;stroke-width:0.286936;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:0.286936, 1.14775;stroke-dashoffset:0;stroke-opacity:0.878431;paint-order:markers fill stroke;stop-color:#000000"
+         id="rect25265"
+         width="1.1936945"
+         height="8.5945969"
+         x="76.85495"
+         y="116.12999" />
+      <rect
+         style="fill:#a6ab92;fill-opacity:1;stroke:none;stroke-width:0.106935;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:0.106935, 0.427741;stroke-dashoffset:0;stroke-opacity:0.878431;paint-order:markers fill stroke;stop-color:#000000"
+         id="rect25265-47"
+         width="1.1936945"
+         height="1.1936945"
+         x="86.404503"
+         y="114.93629" />
+      <rect
+         style="fill:#9e3300;fill-opacity:1;stroke:none;stroke-width:0.106935;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:0.106935, 0.427741;stroke-dashoffset:0;stroke-opacity:0.878431;paint-order:markers fill stroke;stop-color:#000000"
+         id="rect25265-47-0"
+         width="1.1936945"
+         height="1.1936945"
+         x="86.404503"
+         y="117.32368" />
+      <rect
+         style="fill:#006d20;fill-opacity:1;stroke:none;stroke-width:0.106935;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:0.106935, 0.427741;stroke-dashoffset:0;stroke-opacity:0.878431;paint-order:markers fill stroke;stop-color:#000000"
+         id="rect25265-47-5"
+         width="1.1936945"
+         height="1.1936945"
+         x="86.40451"
+         y="116.13" />
+      <rect
+         style="fill:#006d20;fill-opacity:1;stroke:none;stroke-width:0.191291;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:0.191291, 0.765167;stroke-dashoffset:0;stroke-opacity:0.878431;paint-order:markers fill stroke;stop-color:#000000"
+         id="rect25265-4"
+         width="1.1936945"
+         height="3.8198206"
+         x="79.958557"
+         y="120.90477" />
+      <rect
+         style="fill:#9e3300;fill-opacity:1;stroke:none;stroke-width:0.191291;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:4;stroke-dasharray:0.191291, 0.765167;stroke-dashoffset:0;stroke-opacity:0.878431;paint-order:markers fill stroke;stop-color:#000000"
+         id="rect25265-4-7"
+         width="1.1936945"
+         height="3.8198209"
+         x="83.062157"
+         y="120.90477" />
       <g
          id="g81222-5"
          transform="matrix(1.3121571,0,0,1.3121571,21.181073,-60.736722)"
@@ -1918,6 +1940,86 @@
       <text
          xml:space="preserve"
          style="font-weight:bold;font-size:1.8516px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.347174"
+         x="85.792099"
+         y="124.9567"
+         id="text107299-2-9-7-8"><tspan
+           sodipodi:role="line"
+           id="tspan107297-6-9-0-2"
+           style="stroke-width:0.347174"
+           x="85.792099"
+           y="124.9567">OTU</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-weight:bold;font-size:1.8516px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.347174"
+         x="75.269585"
+         y="113.94991"
+         id="text107299-2-9-7-8-0"><tspan
+           sodipodi:role="line"
+           id="tspan107297-6-9-0-2-3"
+           style="stroke-width:0.347174"
+           x="75.269585"
+           y="113.94991">Niche size</tspan></text>
+      <g
+         id="g106943-7-8-7"
+         transform="matrix(0.42133299,0,0,0.42133299,70.338103,62.895803)">
+        <path
+           style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           d="m 11.90625,146.84375 h 23.8125"
+           id="path955-0-6-0-7"
+           inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
+           inkscape:export-xdpi="800"
+           inkscape:export-ydpi="800" />
+        <path
+           style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+           d="m 11.90625,146.84375 v -23.8125"
+           id="path955-3-0-1-4-2"
+           inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
+           inkscape:export-xdpi="800"
+           inkscape:export-ydpi="800" />
+        <path
+           sodipodi:type="star"
+           style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.377953;stroke-linecap:round;stroke-linejoin:round"
+           id="path2480-4-3-2-1"
+           inkscape:flatsided="false"
+           sodipodi:sides="3"
+           sodipodi:cx="5"
+           sodipodi:cy="255"
+           sodipodi:r1="5"
+           sodipodi:r2="2.5"
+           sodipodi:arg1="1.5707963"
+           sodipodi:arg2="2.6179939"
+           inkscape:rounded="0"
+           inkscape:randomized="0"
+           transform="matrix(0,-0.10992661,0.10183328,0,10.025091,147.39338)"
+           inkscape:transform-center-x="-0.12729238"
+           inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
+           inkscape:export-xdpi="800"
+           inkscape:export-ydpi="800"
+           d="m 5.0000001,260 -2.1650636,-3.75 -2.16506359,-3.75 4.33012719,0 4.3301269,0 -2.1650635,3.75 z" />
+        <path
+           sodipodi:type="star"
+           style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.377953;stroke-linecap:round;stroke-linejoin:round"
+           id="path2480-5-6-2-9-1"
+           inkscape:flatsided="false"
+           sodipodi:sides="3"
+           sodipodi:cx="5"
+           sodipodi:cy="255"
+           sodipodi:r1="5"
+           sodipodi:r2="2.5"
+           sodipodi:arg1="1.5707963"
+           sodipodi:arg2="2.6179939"
+           inkscape:rounded="0"
+           inkscape:randomized="0"
+           transform="matrix(0.10992661,0,0,-0.10183328,11.356617,148.72491)"
+           inkscape:transform-center-y="-0.12729195"
+           inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
+           inkscape:export-xdpi="800"
+           inkscape:export-ydpi="800"
+           d="m 5.0000001,260 -2.1650636,-3.75 -2.16506359,-3.75 4.33012719,0 4.3301269,0 -2.1650635,3.75 z" />
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-weight:bold;font-size:1.8516px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.347174"
          x="74.326073"
          y="81.719391"
          id="text110296-2"><tspan
@@ -2268,241 +2370,70 @@
              y="106.59845"
              id="tspan41957">Trait2</tspan></text>
       </g>
-      <g
-         id="g180677"
-         transform="matrix(1.3121571,0,0,1.3121571,-73.338509,1.3519484)"
+      <path
+         d="m 77.863615,125.67973 c 0.02008,-0.0105 0.04173,-0.0159 0.06298,-0.0159 0.04763,0 0.09382,0.0256 0.117963,0.0706 0.03477,0.0651 0.0105,0.14613 -0.05472,0.18094 -0.116519,0.0623 -0.284239,0.35857 -0.366118,0.54899 -0.02926,0.0678 -0.107728,0.0992 -0.175593,0.0699 -0.06784,-0.0291 -0.0992,-0.10773 -0.06994,-0.17561 0.0391,-0.0909 0.246266,-0.55104 0.48559,-0.6791 z m -0.971298,-0.28738 c 0.160713,0.13124 0.399643,0.37394 0.427553,0.50266 0.01561,0.0722 0.08673,0.11797 0.158942,0.10235 0.07217,-0.0156 0.117963,-0.0869 0.102348,-0.15898 -0.05747,-0.26525 -0.443142,-0.59067 -0.51985,-0.65322 -0.0248,-0.0202 -0.05459,-0.03 -0.08437,-0.03 -0.03871,0 -0.07729,0.0168 -0.103661,0.0492 -0.04671,0.0572 -0.03805,0.1414 0.01903,0.18808 z m 0.01365,0.0794 c -0.0079,-0.007 -0.01443,-0.0131 -0.02073,-0.0202 9.19e-4,0.018 0.0052,0.036 0.0143,0.0531 0.02467,0.0487 0.07519,0.0756 0.12636,0.0728 -0.03976,-0.0375 -0.08043,-0.0736 -0.1198,-0.10576 z m 0.575591,0.068 c 0.09224,0.009 0.183728,0.0226 0.257314,0.0377 0.07243,0.015 0.143012,-0.0316 0.157918,-0.10393 0.01483,-0.0723 -0.03162,-0.14302 -0.103923,-0.15791 -0.05997,-0.0118 -0.272653,-0.0529 -0.483451,-0.0529 -0.03202,0 -0.06416,0.001 -0.09566,0.003 0.07637,0.0676 0.17886,0.16515 0.267759,0.27402 z m -0.400195,0.19187 c -0.07558,0.19678 -0.114157,0.40983 -0.123999,0.47026 -0.01181,0.0728 0.03727,0.14162 0.11009,0.15362 0.07283,0.0118 0.141674,-0.0373 0.153615,-0.11022 0.01181,-0.0741 0.03871,-0.22421 0.06377,-0.31343 -0.03228,-0.16806 -0.103266,-0.19592 -0.166237,-0.28847 -0.01325,0.0286 -0.02572,0.0581 -0.03713,0.0882 z"
+         id="path13588-1-7"
+         style="fill:#8b00ff;fill-opacity:1;stroke-width:0.00385774;stroke-miterlimit:4;stroke-dasharray:none"
          inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
          inkscape:export-xdpi="800"
-         inkscape:export-ydpi="800">
-        <path
-           d="m 114.44186,90.47469 c 0.0153,-0.0082 0.0318,-0.01205 0.048,-0.01205 0.0363,0 0.0715,0.0195 0.0899,0.05382 0.0265,0.04962 0.008,0.111358 -0.0417,0.137886 -0.0888,0.04753 -0.21662,0.273273 -0.27902,0.418387 -0.0223,0.0517 -0.0821,0.07561 -0.13382,0.05335 -0.0517,-0.02225 -0.0756,-0.08214 -0.0533,-0.133824 0.0298,-0.06931 0.18768,-0.419954 0.37007,-0.517553 z m -0.74023,-0.21901 c 0.12248,0.100014 0.30457,0.284974 0.32584,0.383077 0.0119,0.05497 0.0661,0.08993 0.12113,0.07799 0.055,-0.01191 0.0899,-0.06616 0.078,-0.121163 -0.0438,-0.202149 -0.33772,-0.450153 -0.39618,-0.49782 -0.0189,-0.01539 -0.0416,-0.02293 -0.0643,-0.02293 -0.0295,0 -0.0589,0.01279 -0.079,0.03749 -0.0356,0.04361 -0.029,0.107761 0.0145,0.143344 z m 0.0104,0.06055 c -0.006,-0.0049 -0.011,-0.0099 -0.0158,-0.01543 7e-4,0.01372 0.004,0.02744 0.0109,0.04047 0.0188,0.03709 0.0573,0.05763 0.0963,0.05554 -0.0303,-0.02862 -0.0613,-0.0561 -0.0913,-0.08061 z m 0.43866,0.05182 c 0.0703,0.0066 0.14002,0.01715 0.1961,0.02867 0.0552,0.01142 0.10899,-0.02406 0.12035,-0.07917 0.0113,-0.05511 -0.0241,-0.109001 -0.0792,-0.120359 -0.0457,-0.0094 -0.20779,-0.04033 -0.36844,-0.04033 -0.0244,0 -0.0489,9.8e-4 -0.0729,0.0024 0.0582,0.05148 0.13631,0.125862 0.20406,0.208833 z m -0.30499,0.146226 c -0.0576,0.149955 -0.087,0.312331 -0.0945,0.358376 -0.009,0.05552 0.0284,0.107932 0.0839,0.117086 0.0555,0.0092 0.10797,-0.02842 0.11707,-0.08395 0.009,-0.05648 0.0295,-0.170873 0.0486,-0.23887 -0.0246,-0.128081 -0.0787,-0.149308 -0.12669,-0.219839 -0.0101,0.02181 -0.0196,0.04435 -0.0283,0.0672 z"
-           id="path13588-1-7"
-           style="fill:#8b00ff;fill-opacity:1;stroke-width:0.00294;stroke-miterlimit:4;stroke-dasharray:none"
-           inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-           inkscape:export-xdpi="800"
-           inkscape:export-ydpi="800" />
-        <path
-           d="m 114.44186,88.748494 c 0.0153,-0.0082 0.0318,-0.01205 0.048,-0.01205 0.0363,0 0.0715,0.0195 0.0899,0.05382 0.0265,0.04962 0.008,0.111358 -0.0417,0.137886 -0.0888,0.04753 -0.21662,0.273273 -0.27902,0.418387 -0.0223,0.05169 -0.0821,0.07561 -0.13382,0.05335 -0.0517,-0.02225 -0.0756,-0.08214 -0.0533,-0.133824 0.0298,-0.06931 0.18768,-0.419954 0.37007,-0.517553 z m -0.74023,-0.21901 c 0.12248,0.100014 0.30457,0.284974 0.32584,0.383077 0.0119,0.05497 0.0661,0.08993 0.12113,0.07799 0.055,-0.01191 0.0899,-0.06616 0.078,-0.121163 -0.0438,-0.202149 -0.33772,-0.450153 -0.39618,-0.49782 -0.0189,-0.01539 -0.0416,-0.02293 -0.0643,-0.02293 -0.0295,0 -0.0589,0.01279 -0.079,0.03748 -0.0356,0.04361 -0.029,0.107761 0.0145,0.143344 z m 0.0104,0.06055 c -0.006,-0.0049 -0.011,-0.0099 -0.0158,-0.01544 7e-4,0.01372 0.004,0.02744 0.0109,0.04047 0.0188,0.03709 0.0573,0.05763 0.0963,0.05555 -0.0303,-0.02862 -0.0613,-0.0561 -0.0913,-0.08061 z m 0.43866,0.05181 c 0.0703,0.0067 0.14002,0.01715 0.1961,0.02867 0.0552,0.01142 0.10899,-0.02406 0.12035,-0.07917 0.0113,-0.05511 -0.0241,-0.109001 -0.0792,-0.120359 -0.0457,-0.0094 -0.20779,-0.04033 -0.36844,-0.04033 -0.0244,0 -0.0489,9.8e-4 -0.0729,0.0025 0.0582,0.05148 0.13631,0.125862 0.20406,0.208833 z m -0.30499,0.146226 c -0.0576,0.149955 -0.087,0.312331 -0.0945,0.358376 -0.009,0.05552 0.0284,0.107932 0.0839,0.117086 0.0555,0.0092 0.10797,-0.02842 0.11707,-0.08395 0.009,-0.05648 0.0295,-0.170873 0.0486,-0.23887 -0.0246,-0.128081 -0.0787,-0.149308 -0.12669,-0.219839 -0.0101,0.02181 -0.0196,0.04435 -0.0283,0.0672 z"
-           id="path13588-1-2-9"
-           style="fill:#00ffa2;fill-opacity:1;stroke-width:0.00294;stroke-miterlimit:4;stroke-dasharray:none"
-           inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-           inkscape:export-xdpi="800"
-           inkscape:export-ydpi="800" />
-        <path
-           d="m 114.44186,92.200886 c 0.0153,-0.0082 0.0318,-0.01205 0.048,-0.01205 0.0363,0 0.0715,0.0195 0.0899,0.05382 0.0265,0.04962 0.008,0.111358 -0.0417,0.137886 -0.0888,0.04753 -0.21662,0.273273 -0.27902,0.418387 -0.0223,0.05169 -0.0821,0.07561 -0.13382,0.05335 -0.0517,-0.02225 -0.0756,-0.08214 -0.0533,-0.133824 0.0298,-0.06931 0.18768,-0.419954 0.37007,-0.517553 z m -0.74023,-0.21901 c 0.12248,0.100014 0.30457,0.284974 0.32584,0.383077 0.0119,0.05497 0.0661,0.08992 0.12113,0.07799 0.055,-0.01191 0.0899,-0.06616 0.078,-0.121163 -0.0438,-0.202149 -0.33772,-0.450153 -0.39618,-0.49782 -0.0189,-0.01539 -0.0416,-0.02293 -0.0643,-0.02293 -0.0295,0 -0.0589,0.01279 -0.079,0.03748 -0.0356,0.04361 -0.029,0.107761 0.0145,0.143344 z m 0.0104,0.06055 c -0.006,-0.0049 -0.011,-0.0099 -0.0158,-0.01543 7e-4,0.01372 0.004,0.02744 0.0109,0.04047 0.0188,0.03709 0.0573,0.05763 0.0963,0.05554 -0.0303,-0.02862 -0.0613,-0.0561 -0.0913,-0.0806 z m 0.43866,0.05181 c 0.0703,0.0066 0.14002,0.01715 0.1961,0.02867 0.0552,0.01142 0.10899,-0.02406 0.12035,-0.07917 0.0113,-0.05511 -0.0241,-0.109001 -0.0792,-0.120359 -0.0457,-0.0094 -0.20779,-0.04033 -0.36844,-0.04033 -0.0244,0 -0.0489,9.8e-4 -0.0729,0.0024 0.0582,0.05148 0.13631,0.125862 0.20406,0.208833 z m -0.30499,0.146226 c -0.0576,0.149955 -0.087,0.312331 -0.0945,0.358376 -0.009,0.05552 0.0284,0.107932 0.0839,0.117086 0.0555,0.0092 0.10797,-0.02842 0.11707,-0.08395 0.009,-0.05648 0.0295,-0.170873 0.0486,-0.23887 -0.0246,-0.128081 -0.0787,-0.149308 -0.12669,-0.219839 -0.0101,0.02181 -0.0196,0.04435 -0.0283,0.0672 z"
-           id="path13588-1-0-0"
-           style="fill:#ff5500;fill-opacity:1;stroke-width:0.00294;stroke-miterlimit:4;stroke-dasharray:none"
-           inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-           inkscape:export-xdpi="800"
-           inkscape:export-ydpi="800" />
-        <path
-           d="m 130.00544,78.18338 c 0.0153,-0.0082 0.0318,-0.01205 0.048,-0.01205 0.0363,0 0.0715,0.0195 0.0899,0.05382 0.0265,0.04962 0.008,0.111358 -0.0417,0.137886 -0.0888,0.04753 -0.21662,0.273273 -0.27902,0.418387 -0.0223,0.05169 -0.0821,0.07561 -0.13382,0.05335 -0.0517,-0.02225 -0.0756,-0.08214 -0.0533,-0.133824 0.0298,-0.06931 0.18768,-0.419954 0.37007,-0.517553 z m -0.74023,-0.21901 c 0.12248,0.100014 0.30457,0.284974 0.32584,0.383077 0.0119,0.05497 0.0661,0.08992 0.12113,0.07799 0.055,-0.01191 0.0899,-0.06616 0.078,-0.121163 -0.0438,-0.202149 -0.33772,-0.450153 -0.39618,-0.49782 -0.0189,-0.01539 -0.0416,-0.02293 -0.0643,-0.02293 -0.0295,0 -0.0589,0.01279 -0.079,0.03748 -0.0356,0.04361 -0.029,0.107761 0.0145,0.143344 z m 0.0104,0.06055 c -0.006,-0.0049 -0.011,-0.0099 -0.0158,-0.01543 7e-4,0.01372 0.004,0.02744 0.0109,0.04047 0.0188,0.03709 0.0573,0.05763 0.0963,0.05554 -0.0303,-0.02862 -0.0613,-0.0561 -0.0913,-0.0806 z m 0.43866,0.05181 c 0.0703,0.0066 0.14002,0.01715 0.1961,0.02867 0.0552,0.01142 0.10899,-0.02406 0.12035,-0.07917 0.0113,-0.05511 -0.0241,-0.109001 -0.0792,-0.120359 -0.0457,-0.0094 -0.20779,-0.04033 -0.36844,-0.04033 -0.0244,0 -0.0489,9.8e-4 -0.0729,0.0024 0.0582,0.05148 0.13631,0.125862 0.20406,0.208833 z m -0.30499,0.146226 c -0.0576,0.149955 -0.087,0.312331 -0.0945,0.358376 -0.009,0.05552 0.0284,0.107932 0.0839,0.117086 0.0555,0.0092 0.10797,-0.02842 0.11707,-0.08395 0.009,-0.05648 0.0295,-0.170873 0.0486,-0.23887 -0.0246,-0.128081 -0.0787,-0.149308 -0.12669,-0.219839 -0.0101,0.02181 -0.0196,0.04435 -0.0283,0.0672 z"
-           id="path13588-1-0-0-1"
-           style="fill:#ff5500;fill-opacity:1;stroke-width:0.00294;stroke-miterlimit:4;stroke-dasharray:none"
-           inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-           inkscape:export-xdpi="800"
-           inkscape:export-ydpi="800" />
-        <path
-           style="fill:none;stroke:#000000;stroke-width:0.0827727px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-           d="M 116.41667,93.134479 V 85.876507"
-           id="path955-3-0-1-4-4-7-6"
-           inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-           inkscape:export-xdpi="800"
-           inkscape:export-ydpi="800" />
-        <path
-           style="fill:none;stroke:#000000;stroke-width:0.081621px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
-           d="M 123.92143,92.933906 V 85.876507"
-           id="path955-3-0-1-4-4-7-6-7"
-           inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-           inkscape:export-xdpi="800"
-           inkscape:export-ydpi="800" />
-        <path
-           style="fill:none;stroke:#000000;stroke-width:0.08183175;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
-           d="M 131.74503,92.933906 V 85.876507"
-           id="path955-3-0-1-4-4-7-6-7-4"
-           inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-           inkscape:export-xdpi="800"
-           inkscape:export-ydpi="800" />
-        <path
-           style="fill:none;stroke:#000000;stroke-width:0.08183175;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-           d="m 112.65005,87.828855 h 26.37538"
-           id="path955-3-0-1-4-4-7-6-8"
-           inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-           inkscape:export-xdpi="800"
-           inkscape:export-ydpi="800" />
-        <text
-           xml:space="preserve"
-           style="font-weight:bold;font-size:1.41111px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.264583"
-           x="112.67211"
-           y="87.189011"
-           id="text110296-2-0-94-6"><tspan
-             sodipodi:role="line"
-             id="tspan110294-8-2-2-8"
-             style="stroke-width:0.264583"
-             x="112.67211"
-             y="87.189011">OTU </tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-weight:bold;font-size:1.09166px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.264583"
-           x="120.34242"
-           y="86.113579"
-           id="text110296-2-0-94-6-9"><tspan
-             sodipodi:role="line"
-             style="font-size:1.09166px;text-align:center;text-anchor:middle;stroke-width:0.264583"
-             x="120.34242"
-             y="86.113579"
-             id="tspan90218">Driving </tspan><tspan
-             sodipodi:role="line"
-             style="font-size:1.09166px;text-align:center;text-anchor:middle;stroke-width:0.264583"
-             x="120.34242"
-             y="87.478157"
-             id="tspan95334">host traits</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-weight:bold;font-size:1.09166px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.264583"
-           x="127.70221"
-           y="86.2201"
-           id="text110296-2-0-94-6-9-9"><tspan
-             sodipodi:role="line"
-             style="font-size:1.09166px;text-align:center;text-anchor:middle;stroke-width:0.264583"
-             x="127.70221"
-             y="86.2201"
-             id="tspan149726-2">Relative</tspan><tspan
-             sodipodi:role="line"
-             style="font-size:1.09166px;text-align:center;text-anchor:middle;stroke-width:0.264583"
-             x="127.70221"
-             y="87.584679"
-             id="tspan79640">abundance</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-weight:bold;font-size:1.23472px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.264583"
-           x="132.58206"
-           y="87.144783"
-           id="text110296-2-0-94-6-9-6"><tspan
-             sodipodi:role="line"
-             style="font-size:1.23472px;stroke-width:0.264583"
-             x="132.58206"
-             y="87.144783"
-             id="tspan149726-0">Niche size</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-weight:bold;font-size:0.849071px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.20164"
-           x="118.1559"
-           y="89.192474"
-           id="text227492"><tspan
-             sodipodi:role="line"
-             id="tspan227490"
-             style="font-size:0.849071px;stroke-width:0.20164"
-             x="118.1559"
-             y="89.192474">Nb flowers</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-weight:bold;font-size:0.849071px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.20164"
-           x="119.70002"
-           y="90.901878"
-           id="text228222"><tspan
-             sodipodi:role="line"
-             id="tspan228220"
-             style="font-size:0.849071px;stroke-width:0.20164"
-             x="119.70002"
-             y="90.901878">NA</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-weight:bold;font-size:0.849071px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.20164"
-           x="120.35506"
-           y="92.108185"
-           id="text228952"><tspan
-             sodipodi:role="line"
-             id="tspan228950"
-             style="font-size:0.849071px;text-align:center;text-anchor:middle;stroke-width:0.20164"
-             x="120.35506"
-             y="92.108185">Nitrogen</tspan><tspan
-             sodipodi:role="line"
-             style="font-size:0.849071px;text-align:center;text-anchor:middle;stroke-width:0.20164"
-             x="120.35506"
-             y="93.169525"
-             id="tspan102328">content</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-weight:bold;font-size:1.07541px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.20164"
-           x="126.89059"
-           y="89.224663"
-           id="text227492-1"><tspan
-             sodipodi:role="line"
-             id="tspan227490-2"
-             style="stroke-width:0.20164"
-             x="126.89059"
-             y="89.224663">0.19</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-weight:bold;font-size:1.07541px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.20164"
-           x="126.86565"
-           y="90.950859"
-           id="text228222-9"><tspan
-             sodipodi:role="line"
-             id="tspan228220-5"
-             style="stroke-width:0.20164"
-             x="126.86565"
-             y="90.950859">0.10</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-weight:bold;font-size:1.07541px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.20164"
-           x="126.89059"
-           y="92.677055"
-           id="text228952-9"><tspan
-             sodipodi:role="line"
-             id="tspan228950-8"
-             style="stroke-width:0.20164"
-             x="126.89059"
-             y="92.677055">0.05</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-weight:bold;font-size:1.07541px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.20164"
-           x="133.69878"
-           y="89.139748"
-           id="text229814"><tspan
-             sodipodi:role="line"
-             id="tspan229812"
-             style="stroke-width:0.20164"
-             x="133.69878"
-             y="89.139748">narrow</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-weight:bold;font-size:1.07541px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.20164"
-           x="133.69878"
-           y="92.59214"
-           id="text230862"><tspan
-             sodipodi:role="line"
-             id="tspan230860"
-             style="stroke-width:0.20164"
-             x="133.69878"
-             y="92.59214">narrow</tspan></text>
-        <text
-           xml:space="preserve"
-           style="font-weight:bold;font-size:1.07541px;line-height:1.25;font-family:Cantarell;-inkscape-font-specification:'Cantarell Bold';stroke-width:0.20164"
-           x="134.33205"
-           y="90.996605"
-           id="text231436"><tspan
-             sodipodi:role="line"
-             id="tspan231434"
-             style="stroke-width:0.20164"
-             x="134.33205"
-             y="90.996605">wide</tspan></text>
-        <path
-           d="m 136.55542,78.001427 c 0.0153,-0.0082 0.0318,-0.01205 0.048,-0.01205 0.0363,0 0.0715,0.0195 0.0899,0.05382 0.0265,0.04962 0.008,0.111358 -0.0417,0.137886 -0.0888,0.04753 -0.21662,0.273273 -0.27902,0.418387 -0.0223,0.0517 -0.0821,0.07561 -0.13382,0.05335 -0.0517,-0.02225 -0.0756,-0.08214 -0.0533,-0.133824 0.0298,-0.06931 0.18768,-0.419954 0.37007,-0.517553 z m -0.74023,-0.21901 c 0.12248,0.100014 0.30457,0.284974 0.32584,0.383077 0.0119,0.05497 0.0661,0.08993 0.12113,0.07799 0.055,-0.01191 0.0899,-0.06616 0.078,-0.121163 -0.0438,-0.202149 -0.33772,-0.450153 -0.39618,-0.49782 -0.0189,-0.01539 -0.0416,-0.02293 -0.0643,-0.02293 -0.0295,0 -0.0589,0.01279 -0.079,0.03749 -0.0356,0.04361 -0.029,0.107761 0.0145,0.143344 z m 0.0104,0.06055 c -0.006,-0.0049 -0.011,-0.0099 -0.0158,-0.01543 7e-4,0.01372 0.004,0.02744 0.0109,0.04047 0.0188,0.03709 0.0573,0.05763 0.0963,0.05554 -0.0303,-0.02862 -0.0613,-0.0561 -0.0913,-0.08061 z m 0.43866,0.05182 c 0.0703,0.0066 0.14002,0.01715 0.1961,0.02867 0.0552,0.01142 0.10899,-0.02406 0.12035,-0.07917 0.0113,-0.05511 -0.0241,-0.109001 -0.0792,-0.120359 -0.0457,-0.0094 -0.20779,-0.04033 -0.36844,-0.04033 -0.0244,0 -0.0489,9.8e-4 -0.0729,0.0024 0.0582,0.05148 0.13631,0.125862 0.20406,0.208833 z m -0.30499,0.146226 c -0.0576,0.149955 -0.087,0.312331 -0.0945,0.358376 -0.009,0.05552 0.0284,0.107932 0.0839,0.117086 0.0555,0.0092 0.10797,-0.02842 0.11707,-0.08395 0.009,-0.05648 0.0295,-0.170873 0.0486,-0.23887 -0.0246,-0.128081 -0.0787,-0.149308 -0.12669,-0.219839 -0.0101,0.02181 -0.0196,0.04435 -0.0283,0.0672 z"
-           id="path13588-1-7-5"
-           style="fill:#8b00ff;fill-opacity:1;stroke-width:0.00294;stroke-miterlimit:4;stroke-dasharray:none"
-           inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-           inkscape:export-xdpi="800"
-           inkscape:export-ydpi="800" />
-        <path
-           d="m 134.16328,73.423539 c 0.0153,-0.0082 0.0318,-0.01205 0.048,-0.01205 0.0363,0 0.0715,0.0195 0.0899,0.05382 0.0265,0.04962 0.008,0.111358 -0.0417,0.137886 -0.0888,0.04753 -0.21662,0.273273 -0.27902,0.418387 -0.0223,0.05169 -0.0821,0.07561 -0.13382,0.05335 -0.0517,-0.02225 -0.0756,-0.08214 -0.0533,-0.133824 0.0298,-0.06931 0.18768,-0.419954 0.37007,-0.517553 z m -0.74023,-0.21901 c 0.12248,0.100014 0.30457,0.284974 0.32584,0.383077 0.0119,0.05497 0.0661,0.08993 0.12113,0.07799 0.055,-0.01191 0.0899,-0.06616 0.078,-0.121163 -0.0438,-0.202149 -0.33772,-0.450153 -0.39618,-0.49782 -0.0189,-0.01539 -0.0416,-0.02293 -0.0643,-0.02293 -0.0295,0 -0.0589,0.01279 -0.079,0.03748 -0.0356,0.04361 -0.029,0.107761 0.0145,0.143344 z m 0.0104,0.06055 c -0.006,-0.0049 -0.011,-0.0099 -0.0158,-0.01544 7e-4,0.01372 0.004,0.02744 0.0109,0.04047 0.0188,0.03709 0.0573,0.05763 0.0963,0.05555 -0.0303,-0.02862 -0.0613,-0.0561 -0.0913,-0.08061 z m 0.43866,0.05181 c 0.0703,0.0067 0.14002,0.01715 0.1961,0.02867 0.0552,0.01142 0.10899,-0.02406 0.12035,-0.07917 0.0113,-0.05511 -0.0241,-0.109001 -0.0792,-0.120359 -0.0457,-0.0094 -0.20779,-0.04033 -0.36844,-0.04033 -0.0244,0 -0.0489,9.8e-4 -0.0729,0.0025 0.0582,0.05148 0.13631,0.125862 0.20406,0.208833 z m -0.30499,0.146226 c -0.0576,0.149955 -0.087,0.312331 -0.0945,0.358376 -0.009,0.05552 0.0284,0.107932 0.0839,0.117086 0.0555,0.0092 0.10797,-0.02842 0.11707,-0.08395 0.009,-0.05648 0.0295,-0.170873 0.0486,-0.23887 -0.0246,-0.128081 -0.0787,-0.149308 -0.12669,-0.219839 -0.0101,0.02181 -0.0196,0.04435 -0.0283,0.0672 z"
-           id="path13588-1-2-9-8"
-           style="fill:#00ffa2;fill-opacity:1;stroke-width:0.00294;stroke-miterlimit:4;stroke-dasharray:none"
-           inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
-           inkscape:export-xdpi="800"
-           inkscape:export-ydpi="800" />
-      </g>
+         inkscape:export-ydpi="800" />
+      <path
+         d="m 80.967222,125.6797 c 0.02008,-0.0108 0.04173,-0.0158 0.06298,-0.0158 0.04763,0 0.09382,0.0256 0.117963,0.0706 0.03477,0.0651 0.0105,0.14612 -0.05472,0.18093 -0.116519,0.0624 -0.284239,0.35858 -0.366118,0.54899 -0.02926,0.0678 -0.107728,0.0992 -0.175593,0.0701 -0.06784,-0.0291 -0.0992,-0.10773 -0.06994,-0.1756 0.0391,-0.0909 0.246266,-0.55104 0.48559,-0.67911 z m -0.971298,-0.28737 c 0.160713,0.13123 0.399643,0.37393 0.427553,0.50266 0.01561,0.0721 0.08673,0.118 0.158942,0.10233 0.07217,-0.0156 0.117963,-0.0868 0.102348,-0.15898 -0.05747,-0.26526 -0.443142,-0.59068 -0.51985,-0.65322 -0.0248,-0.0202 -0.05459,-0.0301 -0.08437,-0.0301 -0.03871,0 -0.07729,0.0168 -0.103661,0.0492 -0.04671,0.0572 -0.03805,0.1414 0.01903,0.18809 z m 0.01365,0.0795 c -0.0079,-0.006 -0.01443,-0.013 -0.02073,-0.0203 9.19e-4,0.018 0.0052,0.036 0.0143,0.0531 0.02467,0.0487 0.07519,0.0756 0.12636,0.0729 -0.03976,-0.0375 -0.08043,-0.0736 -0.1198,-0.10577 z m 0.575591,0.068 c 0.09224,0.009 0.183728,0.0225 0.257314,0.0376 0.07243,0.015 0.143012,-0.0316 0.157918,-0.10388 0.01483,-0.0723 -0.03162,-0.14303 -0.103923,-0.15793 -0.05997,-0.0123 -0.272653,-0.0529 -0.483451,-0.0529 -0.03202,0 -0.06416,0.001 -0.09566,0.003 0.07637,0.0676 0.17886,0.16515 0.267759,0.27402 z m -0.400195,0.19187 c -0.07558,0.19677 -0.114157,0.40983 -0.123999,0.47025 -0.01181,0.0729 0.03727,0.14162 0.11009,0.15363 0.07283,0.0121 0.141674,-0.0373 0.153615,-0.11015 0.01181,-0.0741 0.03871,-0.22421 0.06377,-0.31344 -0.03228,-0.16806 -0.103266,-0.19591 -0.166237,-0.28846 -0.01325,0.0286 -0.02572,0.0582 -0.03713,0.0882 z"
+         id="path13588-1-2-9"
+         style="fill:#00ffa2;fill-opacity:1;stroke-width:0.00385774;stroke-miterlimit:4;stroke-dasharray:none"
+         inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
+         inkscape:export-xdpi="800"
+         inkscape:export-ydpi="800" />
+      <path
+         d="m 84.070822,125.67974 c 0.02008,-0.0105 0.04173,-0.0159 0.06298,-0.0159 0.04763,0 0.09382,0.0256 0.117963,0.0706 0.03477,0.0651 0.0105,0.14612 -0.05472,0.18093 -0.116519,0.0623 -0.284239,0.35858 -0.366118,0.54898 -0.02926,0.0678 -0.107728,0.0992 -0.175593,0.0699 -0.06784,-0.0291 -0.0992,-0.10773 -0.06994,-0.17559 0.0391,-0.0909 0.246266,-0.55104 0.48559,-0.67911 z m -0.971298,-0.28737 c 0.160713,0.13123 0.399643,0.37392 0.427553,0.50266 0.01561,0.0722 0.08673,0.11796 0.158942,0.10235 0.07217,-0.0156 0.117963,-0.0869 0.102348,-0.159 -0.05747,-0.26524 -0.443142,-0.59066 -0.51985,-0.65321 -0.0248,-0.0202 -0.05459,-0.03 -0.08437,-0.03 -0.03871,0 -0.07729,0.0168 -0.103661,0.0492 -0.04671,0.0572 -0.03805,0.14141 0.01903,0.1881 z m 0.01365,0.0795 c -0.0079,-0.007 -0.01443,-0.0131 -0.02073,-0.0202 9.19e-4,0.018 0.0052,0.0359 0.0143,0.0531 0.02467,0.0487 0.07519,0.0756 0.12636,0.0728 -0.03976,-0.0375 -0.08043,-0.0736 -0.1198,-0.10576 z m 0.575591,0.068 c 0.09224,0.009 0.183728,0.0226 0.257314,0.0377 0.07243,0.015 0.143012,-0.0316 0.157918,-0.10392 0.01483,-0.0723 -0.03162,-0.14302 -0.103923,-0.15793 -0.05997,-0.0118 -0.272653,-0.0529 -0.483451,-0.0529 -0.03202,0 -0.06416,10e-4 -0.09566,0.003 0.07637,0.0676 0.17886,0.16515 0.267759,0.27402 z m -0.400195,0.19188 c -0.07558,0.19676 -0.114157,0.40983 -0.123999,0.47024 -0.01181,0.0728 0.03727,0.14162 0.11009,0.15364 0.07283,0.0118 0.141674,-0.0373 0.153615,-0.11022 0.01181,-0.0741 0.03871,-0.22421 0.06377,-0.31344 -0.03228,-0.16806 -0.103266,-0.19592 -0.166237,-0.28846 -0.01325,0.0286 -0.02572,0.0583 -0.03713,0.0882 z"
+         id="path13588-1-0-0"
+         style="fill:#ff5500;fill-opacity:1;stroke-width:0.00385774;stroke-miterlimit:4;stroke-dasharray:none"
+         inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
+         inkscape:export-xdpi="800"
+         inkscape:export-ydpi="800" />
+      <path
+         d="m 97.249052,103.94083 c 0.02008,-0.0108 0.04173,-0.0158 0.06298,-0.0158 0.04763,0 0.09382,0.0256 0.117963,0.0706 0.03477,0.0651 0.0105,0.14612 -0.05472,0.18093 -0.11652,0.0624 -0.28424,0.35858 -0.366118,0.54899 -0.02926,0.0678 -0.107729,0.0992 -0.175593,0.07 -0.06784,-0.0292 -0.0992,-0.10779 -0.06994,-0.1756 0.0391,-0.091 0.246265,-0.55105 0.48559,-0.67911 z m -0.971298,-0.28738 c 0.160713,0.13123 0.399644,0.37393 0.427553,0.50266 0.01561,0.0721 0.08673,0.11799 0.158942,0.10233 0.07217,-0.0156 0.117963,-0.0868 0.102348,-0.15898 -0.05747,-0.26525 -0.443141,-0.59067 -0.51985,-0.65322 -0.0248,-0.0202 -0.05459,-0.0301 -0.08437,-0.0301 -0.03871,0 -0.07729,0.0168 -0.10366,0.0492 -0.04671,0.0572 -0.03805,0.1414 0.01903,0.18809 z m 0.01365,0.0794 c -0.0079,-0.006 -0.01443,-0.013 -0.02073,-0.0203 9.19e-4,0.018 0.0052,0.036 0.0143,0.0531 0.02467,0.0487 0.07519,0.0756 0.126361,0.0729 -0.03976,-0.0375 -0.08044,-0.0736 -0.1198,-0.10576 z m 0.57559,0.068 c 0.09225,0.009 0.183729,0.0225 0.257314,0.0376 0.07243,0.015 0.143012,-0.0316 0.157918,-0.10388 0.01483,-0.0723 -0.03162,-0.14303 -0.103922,-0.15793 -0.05997,-0.0123 -0.272654,-0.0529 -0.483452,-0.0529 -0.03202,0 -0.06416,10e-4 -0.09566,0.003 0.07637,0.0675 0.17886,0.16515 0.267759,0.27402 z m -0.400194,0.19188 c -0.07558,0.19676 -0.114158,0.40982 -0.123999,0.47024 -0.01181,0.0729 0.03727,0.14162 0.11009,0.15364 0.07282,0.0121 0.141673,-0.0373 0.153614,-0.11016 0.01181,-0.0741 0.03871,-0.22421 0.06377,-0.31343 -0.03228,-0.16807 -0.103267,-0.19592 -0.166237,-0.28847 -0.01325,0.0286 -0.02572,0.0582 -0.03713,0.0882 z"
+         id="path13588-1-0-0-1"
+         style="fill:#ff5500;fill-opacity:1;stroke-width:0.00385774;stroke-miterlimit:4;stroke-dasharray:none"
+         inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
+         inkscape:export-xdpi="800"
+         inkscape:export-ydpi="800" />
+      <path
+         d="m 105.84365,103.70207 c 0.0201,-0.0108 0.0417,-0.0158 0.063,-0.0158 0.0476,0 0.0938,0.0256 0.11796,0.0706 0.0348,0.0651 0.0105,0.14612 -0.0547,0.18093 -0.11652,0.0624 -0.28424,0.35858 -0.36611,0.54899 -0.0293,0.0678 -0.10773,0.0992 -0.1756,0.07 -0.0678,-0.0292 -0.0992,-0.10778 -0.0699,-0.17559 0.0391,-0.0909 0.24626,-0.55105 0.48559,-0.67911 z m -0.97129,-0.28737 c 0.16071,0.13123 0.39964,0.37393 0.42755,0.50266 0.0156,0.0721 0.0867,0.118 0.15894,0.10233 0.0722,-0.0156 0.11796,-0.0868 0.10235,-0.15898 -0.0575,-0.26525 -0.44314,-0.59067 -0.51985,-0.65322 -0.0248,-0.0202 -0.0546,-0.0301 -0.0844,-0.0301 -0.0387,0 -0.0773,0.0168 -0.10366,0.0492 -0.0467,0.0572 -0.0381,0.1414 0.019,0.18809 z m 0.0136,0.0795 c -0.008,-0.006 -0.0144,-0.013 -0.0207,-0.0203 9.2e-4,0.018 0.005,0.036 0.0143,0.0531 0.0247,0.0487 0.0752,0.0756 0.12636,0.0729 -0.0398,-0.0375 -0.0804,-0.0736 -0.1198,-0.10577 z m 0.57559,0.068 c 0.0922,0.009 0.18373,0.0225 0.25732,0.0376 0.0724,0.015 0.14301,-0.0316 0.15792,-0.10389 0.0148,-0.0723 -0.0316,-0.14302 -0.10393,-0.15793 -0.06,-0.0123 -0.27265,-0.0529 -0.48345,-0.0529 -0.032,0 -0.0642,0.001 -0.0957,0.003 0.0764,0.0675 0.17886,0.16515 0.26775,0.27402 z m -0.40019,0.19187 c -0.0756,0.19676 -0.11416,0.40983 -0.124,0.47024 -0.0118,0.0729 0.0373,0.14163 0.11009,0.15364 0.0728,0.0121 0.14167,-0.0373 0.15361,-0.11016 0.0118,-0.0741 0.0387,-0.22421 0.0638,-0.31343 -0.0323,-0.16806 -0.10327,-0.19592 -0.16624,-0.28847 -0.0132,0.0286 -0.0257,0.0582 -0.0371,0.0882 z"
+         id="path13588-1-7-5"
+         style="fill:#8b00ff;fill-opacity:1;stroke-width:0.00385774;stroke-miterlimit:4;stroke-dasharray:none"
+         inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
+         inkscape:export-xdpi="800"
+         inkscape:export-ydpi="800" />
+      <path
+         d="m 102.70479,97.695166 c 0.0201,-0.01076 0.0417,-0.01581 0.063,-0.01581 0.0476,0 0.0938,0.02559 0.11797,0.07062 0.0348,0.06511 0.0105,0.146119 -0.0547,0.180928 -0.11652,0.06237 -0.28424,0.358577 -0.36612,0.54899 -0.0293,0.06782 -0.10773,0.09921 -0.17559,0.07 -0.0678,-0.0292 -0.0992,-0.10778 -0.0699,-0.175598 0.0391,-0.09094 0.24627,-0.551045 0.48559,-0.679111 z m -0.9713,-0.287375 c 0.16072,0.131234 0.39965,0.373931 0.42756,0.502657 0.0156,0.07213 0.0867,0.118002 0.15894,0.102335 0.0722,-0.01563 0.11796,-0.08681 0.10235,-0.158985 -0.0575,-0.265251 -0.44315,-0.590671 -0.51985,-0.653218 -0.0248,-0.02019 -0.0546,-0.03009 -0.0844,-0.03009 -0.0387,0 -0.0773,0.01678 -0.10366,0.04918 -0.0467,0.05722 -0.038,0.1414 0.019,0.18809 z m 0.0136,0.07945 c -0.008,-0.0064 -0.0144,-0.01299 -0.0207,-0.02026 9.2e-4,0.018 0.005,0.03601 0.0143,0.0531 0.0247,0.04867 0.0752,0.07562 0.12636,0.07289 -0.0398,-0.03755 -0.0804,-0.07361 -0.1198,-0.105773 z m 0.57559,0.06798 c 0.0922,0.0088 0.18373,0.0225 0.25731,0.03762 0.0724,0.01498 0.14302,-0.03157 0.15792,-0.103883 0.0148,-0.07231 -0.0316,-0.143027 -0.10392,-0.15793 -0.06,-0.01233 -0.27265,-0.05292 -0.48345,-0.05292 -0.032,0 -0.0642,0.0013 -0.0957,0.0033 0.0764,0.06755 0.17886,0.165151 0.26776,0.274022 z m -0.40019,0.191871 c -0.0756,0.196765 -0.11416,0.409828 -0.124,0.470246 -0.0118,0.07285 0.0373,0.141624 0.11009,0.153635 0.0728,0.01207 0.14167,-0.03729 0.15361,-0.110155 0.0118,-0.07411 0.0387,-0.224213 0.0638,-0.313435 -0.0323,-0.168063 -0.10326,-0.195916 -0.16624,-0.288464 -0.0132,0.02862 -0.0257,0.05819 -0.0371,0.08818 z"
+         id="path13588-1-2-9-8"
+         style="fill:#00ffa2;fill-opacity:1;stroke-width:0.00385774;stroke-miterlimit:4;stroke-dasharray:none"
+         inkscape:export-filename="/home/tlafontrapn/workwork/PhD_leftovers/holobrom_1.png"
+         inkscape:export-xdpi="800"
+         inkscape:export-ydpi="800" />
+      <text
+         xml:space="preserve"
+         style="font-weight:bold;font-size:1.27327px;line-height:0.8;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:center;text-anchor:middle;stroke-width:0.238739"
+         x="91.43515"
+         y="115.98886"
+         id="text31529"><tspan
+           sodipodi:role="line"
+           id="tspan31527"
+           style="font-size:1.27327px;stroke-width:0.238739"
+           x="91.43515"
+           y="115.98886">Generalists</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-weight:bold;font-size:1.27327px;line-height:0.8;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:center;text-anchor:middle;stroke-width:0.238739"
+         x="94.656868"
+         y="117.05635"
+         id="text31529-8"><tspan
+           sodipodi:role="line"
+           id="tspan31527-4"
+           style="font-size:1.27327px;stroke-width:0.238739"
+           x="94.656868"
+           y="117.05635">High fitness specialist</tspan></text>
     </g>
     <text
        xml:space="preserve"
@@ -3120,5 +3051,50 @@
            x="19.234314"
            y="127.02418">X</tspan></text>
     </g>
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+       d="m 35.71875,71.437499 c 1.323181,0 2.646097,0 3.96875,0"
+       id="path10333"
+       inkscape:path-effect="#path-effect10335"
+       inkscape:original-d="m 35.71875,71.437499 c 1.323181,2.65e-4 2.646097,2.65e-4 3.96875,0" />
+    <path
+       style="fill:none;stroke:#000000;stroke-width:0.26499999;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:0.26499999,1.05999995;stroke-dashoffset:0"
+       d="m 35.71875,74.083333 c 1.323181,0 2.646097,0 3.96875,0"
+       id="path10333-7"
+       inkscape:path-effect="#path-effect15589"
+       inkscape:original-d="m 35.71875,74.083333 c 1.323181,2.65e-4 2.646097,2.65e-4 3.96875,0" />
+    <text
+       xml:space="preserve"
+       style="font-weight:bold;font-size:1.41111px;line-height:0.8;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:center;text-anchor:middle;stroke-width:0.264583"
+       x="43.538193"
+       y="71.839119"
+       id="text11615"><tspan
+         sodipodi:role="line"
+         id="tspan11613"
+         style="font-size:1.41111px;stroke-width:0.264583"
+         x="43.538193"
+         y="71.839119">Host niche</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-weight:bold;font-size:1.41111px;line-height:0.8;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:center;text-anchor:middle;stroke-width:0.264583"
+       x="45.27367"
+       y="74.338913"
+       id="text11615-5"><tspan
+         sodipodi:role="line"
+         id="tspan11613-8"
+         style="font-size:1.41111px;stroke-width:0.264583"
+         x="45.27367"
+         y="74.338913">Symbiont niche</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-weight:bold;font-size:1.41111px;line-height:0.8;font-family:Arial;-inkscape-font-specification:'Arial Bold';text-align:center;text-anchor:middle;stroke-width:0.264583"
+       x="88.359161"
+       y="125.39011"
+       id="text44102"><tspan
+         sodipodi:role="line"
+         id="tspan44100"
+         style="font-size:1.41111px;stroke-width:0.264583"
+         x="88.359161"
+         y="125.39011">Low fitness specialist</tspan></text>
   </g>
 </svg>
