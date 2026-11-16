@@ -1605,7 +1605,7 @@ for(i in datasets){
         mutate(value=(value/nb_reads)*100)%>%
         group_by(label)%>%
         summarise(prevalence=n(),
-                  relab=mean(value))%>% #all samples rarefied at data_tmp$sample_table$nb_reads
+                  relab=mean(value))%>% 
         ungroup()%>%
         mutate(label=gsub("^M","",label))
     
