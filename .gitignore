@@ -7,6 +7,6 @@ results/
 *.fasta
 *.svg
 *.png
-taxdb
-clean_metabar_data
+taxdb/
+clean_metabar_data/
 .positai
