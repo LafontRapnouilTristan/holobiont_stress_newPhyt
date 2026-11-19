@@ -4,7 +4,7 @@ Repository for submission in New Phytol. of our paper on the plant holobiont res
 
 # Data origin
 
-The data used in this paper are a part of a greater experimental dataset with samples sequenced over different Illumina runs. To ensure consistence in the OTUs identification across samples, they were processed within a unique bioinformatic pipeline hoste [here](https://github.com/LafontRapnouilTristan/OBIholo_pipeline). Thus, to produce the inputs for `holobiont_under_stress.R`, we need to run several script taking the pipeline outputs and applying sample filtering, cleaning and formating to get to an analysis-ready dataset. Codes and data to go from the raw [pipeline](https://github.com/LafontRapnouilTristan/OBIholo_pipeline) outputs to the analysis ready files hosted correspond to the `clean_metabar_data.zip` archive downloadable from this zenodo [repository](https://zenodo.org/records/24318812).
+The data used in this paper are a part of a greater experimental dataset with samples sequenced over different Illumina runs. To ensure consistence in the OTUs identification across samples, they were processed within a unique bioinformatic pipeline hosted [here](https://github.com/LafontRapnouilTristan/OBIholo_pipeline). Thus, to produce the inputs for `holobiont_under_stress.R`, we need to run several script taking the pipeline outputs and applying sample filtering, cleaning and formating to get to an analysis-ready dataset. Codes and data to go from the raw [pipeline](https://github.com/LafontRapnouilTristan/OBIholo_pipeline) outputs to the analysis ready files hosted correspond to the `clean_metabar_data.zip` archive downloadable from this zenodo [repository](https://zenodo.org/records/24318812).
 
 # Reproduce the figures
 
